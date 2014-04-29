@@ -271,5 +271,7 @@ int main(int argc, char** argv)
     f->cd();
     nt->Write("nt");
     f->Close();
+
+    gSystem -> Exec("rm input.tmp"); 
 }
     
