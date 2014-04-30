@@ -31,6 +31,7 @@ std::vector<float> time2;
 
 TProfile *p_dtvsamp = new TProfile("dtvsamp","",100,-0.1,0.);//,1200,-20.,20.);
 
+int frac = 36;
 
 float trigger (float x1, float y1, float x2, float y2, float x3, float y3, float frazione, float amp)
 {
@@ -44,31 +45,13 @@ return ritorno;
 
 void plottersimple(TString runFolder)
 {
-for(int frac = 36 ; frac < 37 ; ++frac)
-{
+//for(int frac = 36 ; frac < 37 ; ++frac)
+//{
 	std::cout<<frac<<std::endl;
   // General reset
   gROOT->Reset();
 
-TH1F *histos = new TH1F ("histos","histos",1200,6.,18.);
-TH1F *h_signal = new TH1F ("h_signal","h_signal",600,-20.,20.);
-TH1F *h_signal2 = new TH1F ("h_signal2","h_signal2",1200,-50.,50.);
-TH1F *h_signal3 = new TH1F ("h_signal3","h_signal3",1200,-50.,50.);
-/*
-TH1F* h_base[3];
-char hb[10];
-for (int i=0;i<3;i++)
-	{
-	sprintf (hb,"Baseline_%d",i);
-	hbase[iw] = new TH1F(hb,hb,1000,0.,1.);
-	}
-*/
-TF1 *gauss = new TF1("gauss","[3]+[1]/sqrt(2*TMath::Pi()*[0]*[0])*exp(-(x-[2])*(x-[2])/(2*[0]*[0]))",-50,50);
-gauss->SetParName(0,"sigma");
-gauss->SetParName(1,"amplitude");
-gauss->SetParName(2,"mean");
-gauss->SetParName(3,"trasl");
-gauss->SetNpx(1000000);
+
 
   // Define histograms
   TH1F* histo[3];
@@ -121,9 +104,9 @@ gauss->SetNpx(1000000);
   int isave=0;
   int iwin =0;
 
-  // define file for wf
-  TString fileWF = runFolder + "_wf_save.root"; 
-  TFile *fw = new TFile(fileWF,"RECREATE");
+    // define file for wf
+    TString fileWF = runFolder + "_wf_save.root"; 
+    TFile *fw = new TFile(fileWF,"RECREATE");
 
   TString waveFile[400];
   while(getline(inFile,line) && ifile<18000)		  //  evento 17 e' buono per Run4
@@ -193,7 +176,7 @@ gauss->SetNpx(1000000);
 	
     // fill ntuple
     nt->Fill();
-    histos->Fill(tStamp[1]-tStamp[0]);
+ /*   histos->Fill(tStamp[1]-tStamp[0]);
     h_signal->Fill((tStamp[1]+tStamp[0])*0.5-tStamp[2]);
     h_signal2->Fill(tStamp[1]-tStamp[2]);
     h_signal3->Fill(tStamp[2]-tStamp[0]);
@@ -202,8 +185,65 @@ gauss->SetNpx(1000000);
 	time0.push_back(tStamp[0]);  
 	time1.push_back(tStamp[1]);
 	time2.push_back(tStamp[2]);
-}
+*/
 
+}
+  fw->Close();
+
+//  cout << "saved / triggered: " << isave << " / " << iwin << endl;
+  
+  TString filOut = runFolder + ".root"; 
+  TFile *f = new TFile(filOut,"recreate"); 
+  nt->Write();
+  f->Close();
+//}//fine del ciclo for
+//***************************************************************************************************************************************
+//********************************************        READING NTUPLES      **************************************************************
+
+	TFile *Reading = new TFile("WFRun006.root");
+	TTree *t1 = (TTree*)Reading->Get("nt");    	
+
+	float amplitude[3];
+	float time[3];
+	
+	t1->SetBranchAddress("tStamp",&time);
+	t1->SetBranchAddress("ampMax",&amplitude);	
+
+	TH1F *histos = new TH1F ("histos","histos",1200,6.,18.);
+	TH1F *h_signal = new TH1F ("h_signal","h_signal",600,-20.,20.);
+	TH1F *h_signal2 = new TH1F ("h_signal2","h_signal2",1200,-50.,50.);
+	TH1F *h_signal3 = new TH1F ("h_signal3","h_signal3",1200,-50.,50.);
+	/*
+	TH1F* h_base[3];
+	char hb[10];
+	for (int i=0;i<3;i++)
+		{
+		sprintf (hb,"Baseline_%d",i);
+		hbase[iw] = new TH1F(hb,hb,1000,0.,1.);
+		}
+	*/
+	TF1 *gauss = new TF1("gauss","[3]+[1]/sqrt(2*TMath::Pi()*[0]*[0])*exp(-(x-[2])*(x-[2])/(2*[0]*[0]))",-50,50);
+	gauss->SetParName(0,"sigma");
+	gauss->SetParName(1,"amplitude");
+	gauss->SetParName(2,"mean");
+	gauss->SetParName(3,"trasl");
+	gauss->SetNpx(1000000);
+
+	for (int o = 0 ; o < t1->GetEntries() ; ++o)
+	{
+	t1->GetEntry(o);
+        histos->Fill(time[1]-time[0]);
+	h_signal->Fill((time[1]+time[0])*0.5-time[2]);
+        h_signal2->Fill(time[1]-time[2]);
+        h_signal3->Fill(time[2]-time[0]);
+	//dtvsamp->Fill(amplitude[2],(time[1]+time[0])*0.5-time[2]);	
+	p_dtvsamp->Fill(amplitude[2],(time[1]+time[0])*0.5-time[2]);	
+//	time0.push_back(time[0]);  
+//	time1.push_back(time[1]);
+//	time2.push_back(time[2]);
+	
+
+	}
 
 //*****************************************************************************************************************************************
 //***************************************************     DRAW CONCIDENCES     ************************************************************
@@ -232,6 +272,8 @@ gauss->SetNpx(1000000);
   gauss->SetParameters(0.1,30.,11.2,10.);	
   histos->Fit("gauss","","",8.,16.);
   std::cout<<"sigma difference = "<<gauss->GetParameter(0)<<std::endl;
+  float sigma_diff = gauss->GetParameter(0);
+  float mean_diff = gauss->GetParameter(2);
 
   //h_signal2 => 1 - mcp
   h_signal2->GetXaxis()->SetRangeUser(6.5,9.5);
@@ -256,51 +298,50 @@ gauss->SetNpx(1000000);
   gauss->SetParameters(0.05,10.,2.5,3.);	
   h_signal->Fit("gauss","","",-20.,20.);
   std::cout<<"sigma mean - mcp = "<<gauss->GetParameter(0)<<std::endl;
-
-  
-
-  fw->Close();
-  cout << "saved / triggered: " << isave << " / " << iwin << endl;
-  
-  TString filOut = runFolder + ".root"; 
-  TFile *f = new TFile(filOut,"recreate"); 
-  nt->Write();
-  f->Close();
-
-  
+  float sigma_mcp = gauss->GetParameter(0);
+  float mean_mcp = gauss->GetParameter(2);
 
   chi->SetPoint(frac,frac,gauss->GetChisquare()/gauss->GetNDF());
-  sigma->SetPoint(frac,frac,fabs(gauss->GetParameter(0)));
-
-}// fine del ciclo for
+  sigma->SetPoint(frac,frac,fabs(gauss->GetParameter(0))); 
 
 //*****************************************************************************************************************************************
 //*************************************************         EVALUATING EFFICIENCY        *************************************************
 
+int bene = 0;
+int benissimo = 0;
+int fake = 0;
+int drake = 0;
+	
+	for (int r = 0 ; r < t1->GetEntries() ; ++r)
+	{
+	t1->GetEntry(r);
+//	cout << time[1] <<endl;    
+	//dtvsamp->Fill(amplitude[1]+amplitude[0],time[1]-time[0]);	
+	if (fabs((time[1]-time[0]) - mean_diff) < 3*sigma_diff ) 			//double coincidence
+		{					
+		bene++;
+		dtvsamp->Fill(amplitude[2],(time[1]+time[0])*0.5-time[2]);
+	    	if (fabs((time[1]+time[0])*0.5-time[2] - 5.) < 1.5 && amplitude[2]<-0.002)	drake++;	 
+		if (fabs((time[1]+time[0])*0.5-time[2] - mean_mcp) < 3*sigma_mcp && amplitude[2]<-0.002)
+			{
+			 	
+			 benissimo++;
 
-	TFile *Reading = new TFile("WFRun006.root","READ");
-	TTree *t1 = (TTree*)Reading->Get("t1");    	
+			}	      	 
+		}
+	// if (fabs(time[1]-time[0] - mean_diff + 12*sigma_diff) < 3*sigma_diff)// && amplitude[2]<-0.0026)
+	 if (fabs(time[1]-time[0] - 13.5) < 1.5)// && amplitude[2]<-0.0026)
+		fake++;	
+			
+	}
 
-	float amplitude[3];
-	float time[3]
-	t1->SetBranchAddress("tStamp",&time);
-	t1->SetBranchAddress("ampMax",&amplitude);		
-    // save interesting wavefo (VEEEEERY ROUGH)
-    if (fabs((tStamp[1]-tStamp[0])-11.15) < 0.25 ) 			//double coincidence
-	 {
-	 iwin++;
-    	 if ((tStamp[2]-tStamp[0])>2.5 && (tStamp[2]-tStamp[0])<3.5 && ampMax[2]<-0.0026)
-		{
-		for (int iw=0;iw<3;iw++) 	
-			{  
-			sprintf (h1,"Ch%d_%03d",iw,isave);
-	  		histo[iw]->SetName(h1);
-	  		histo[iw]->SetTitle(h1);
-	  		histo[iw]->Write();
-			}
-		isave++;
-      		}	
-    	}
+float rfake = (float)fake*3.*sigma_diff/1.5;
+float rdrake = (float)drake*3.*sigma_mcp/1.5;
+
+cout << "saved / triggered / fake: " << benissimo<< " / " << bene << " / " << rfake << " / "<< drake<< endl;
+float efficiency = (((float)benissimo-rdrake)/((float)bene-(float)rfake))*100.;
+cout << "efficiency is " <<efficiency<< "\%" << endl;
+
 //*****************************************************************************************************************************************
 //************************************************     DRAW SIGMA - CHI    ****************************************************************
 		
