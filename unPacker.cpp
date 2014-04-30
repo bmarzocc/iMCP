@@ -103,6 +103,17 @@ int main(int argc, char** argv)
     nt->Branch("ampMax_channel8",&ampMax_channel8,"ampMax_channel8/F"); 
     nt->Branch("timeAmpMax_channel8",&timeAmpMax_channel8,"timeAmpMax_channel8/I"); 
     
+    waveForm_Trigger.clear();
+    waveForm_channel1.clear();
+    waveForm_channel2.clear();
+    waveForm_channel3.clear();
+    waveForm_channel4.clear();
+    waveForm_channel5.clear();
+    waveForm_channel6.clear();
+    waveForm_channel7.clear();
+    waveForm_channel8.clear();
+
+
     // loop over the file and read data
     ifstream inFile("input.tmp");
     string line;
