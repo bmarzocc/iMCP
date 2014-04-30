@@ -301,7 +301,8 @@ int main(int argc, char** argv)
                }   
                else{
                   ampMax_channel5 = tmp.at(tmp.size()-1);
-                  timeAmpMax_channel5 = 0.2*map_AmpTm[tmp.at(tmp.size()-1)];  
+                  timeAmpMax_channel5 = 0.2*map_AmpTm[tmp.at(tmp.size()-1)]; 
+               } 
 
             }
 
