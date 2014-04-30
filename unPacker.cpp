@@ -2,6 +2,7 @@
 
     simple program to read bin files
     compile with --->  c++ -o unPacker `root-config --cflags --glibs` unPacker.cpp
+         or with --->  c++ -o unPacker unPacker.cpp `root-config --cflags --glibs`
     run with --->  ./unPacker WaveForms
     
 *************************************************************/
@@ -40,8 +41,8 @@ int main(int argc, char** argv)
     // Tree branches and tree structure
     int event;
     int run;
-    vector<float> waveForm_channel0;
-    float ampMax_channel0;
+    vector<float> waveForm_Trigger;
+    float ampMax_Trigger;
     vector<float> waveForm_channel1;
     float ampMax_channel1;
     vector<float> waveForm_channel2;
@@ -64,8 +65,8 @@ int main(int argc, char** argv)
 
     nt->Branch("event",&event,"event/I"); 
     nt->Branch("run",&run,"run/I"); 
-    nt->Branch("waveForm_channel0","std::vector<float>",&waveForm_channel0); 
-    nt->Branch("ampMax_channel0",&ampMax_channel0,"ampMax_channel0/F"); 
+    nt->Branch("waveForm_Trigger","std::vector<float>",&waveForm_Trigger); 
+    nt->Branch("ampMax_Trigger",&ampMax_Trigger,"ampMax_Trigger/F"); 
     nt->Branch("waveForm_channel1","std::vector<float>",&waveForm_channel1);  
     nt->Branch("ampMax_channel1",&ampMax_channel1,"ampMax_channel1/F"); 
     nt->Branch("waveForm_channel2","std::vector<float>",&waveForm_channel2); 
@@ -152,7 +153,7 @@ int main(int argc, char** argv)
 
         event = eventNumber.at(i);
 
-        ampMax_channel0 = 0.;
+        ampMax_Trigger = 0.;
         ampMax_channel1 = 0.;
         ampMax_channel2 = 0.;
         ampMax_channel3 = 0.;
@@ -169,9 +170,9 @@ int main(int argc, char** argv)
             if(iCh == 0)
             {
                for(int iSample=0; iSample<nSize; iSample++)
-                   waveForm_channel0.push_back(channels[iCh].at(iSample+nSize*i));
+                   waveForm_Trigger.push_back(channels[iCh].at(iSample+nSize*i));
 
-               ampMax_channel0 = channels[iCh].at(0);
+               ampMax_Trigger = channels[iCh].at(0);
                
             }
 
@@ -251,7 +252,7 @@ int main(int argc, char** argv)
 
         for(int iCh=nCh+1; iCh<=8; iCh++){
 
-            if(iCh == 0) waveForm_channel0.push_back(0.);
+            if(iCh == 0) waveForm_Trigger.push_back(0.);
             if(iCh == 1) waveForm_channel1.push_back(0.);
             if(iCh == 2) waveForm_channel2.push_back(0.);
             if(iCh == 3) waveForm_channel3.push_back(0.);
