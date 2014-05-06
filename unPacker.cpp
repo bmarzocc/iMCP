@@ -3,7 +3,7 @@
     simple program to read bin files
     compile with --->  c++ -o unPacker `root-config --cflags --glibs` unPacker.cpp
          or with --->  c++ -o unPacker unPacker.cpp `root-config --cflags --glibs`
-    run with --->  ./unPacker WaveForms 36 5 1 // usage: ./unPacker directory fraction baseline-time saveWaveForm
+    run with --->  ./unPacker WaveForms 36 5 1 0 // usage: ./unPacker directory fraction baseline-time saveWaveForm saveWFHistos
     
 *************************************************************/
 
@@ -36,6 +36,7 @@ const float BinToTime = 0.2;
 
 float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp);
 float computeMean(std::vector<float> sample);
+float computeError(std::vector<float> sample);
 
 int main(int argc, char** argv)
 {
@@ -46,6 +47,13 @@ int main(int argc, char** argv)
     float ampFraction = atof(argv[2]);
     float timeBaseLine = atof(argv[3]);
     int saveWF = atoi(argv[4]);
+    int saveWFHistos = atoi(argv[5]);
+  
+    std::cout << "runFolder    = " << runFolder << std::endl;
+    std::cout << "ampFraction  = " << ampFraction << std::endl;
+    std::cout << "timeBaseLine = " << timeBaseLine << std::endl;
+    std::cout << "saveWF       = " << saveWF << std::endl;
+    std::cout << "saveWFHistos = " << saveWFHistos << std::endl;
 
     int binBaseLine = int(timeBaseLine/BinToTime);
 
@@ -60,46 +68,55 @@ int main(int argc, char** argv)
 
     vector<float> waveForm_Trigger;
     float baseLine_Trigger;
+    float baseLineError_Trigger;
     float ampMax_Trigger;
     float timeAmpMax_Trigger;
     float timeConstFrac_Trigger;
     vector<float> waveForm_channel1;
     float baseLine_channel1;
+    float baseLineError_channel1;
     float ampMax_channel1;
     float timeAmpMax_channel1;
     float timeConstFrac_channel1;
     vector<float> waveForm_channel2;
     float baseLine_channel2;
+    float baseLineError_channel2;
     float ampMax_channel2;
     float timeAmpMax_channel2;
     float timeConstFrac_channel2;
     vector<float> waveForm_channel3;
     float baseLine_channel3;
+    float baseLineError_channel3;
     float ampMax_channel3;
     float timeAmpMax_channel3;
     float timeConstFrac_channel3;
     vector<float> waveForm_channel4;
     float baseLine_channel4;
+    float baseLineError_channel4;
     float ampMax_channel4;
     float timeAmpMax_channel4;
     float timeConstFrac_channel4;
     vector<float> waveForm_channel5;
     float baseLine_channel5;
+    float baseLineError_channel5;
     float ampMax_channel5;
     float timeAmpMax_channel5;
     float timeConstFrac_channel5;
     vector<float> waveForm_channel6;
     float baseLine_channel6;
+    float baseLineError_channel6;
     float ampMax_channel6;
     float timeAmpMax_channel6;
     float timeConstFrac_channel6;
     vector<float> waveForm_channel7;
     float baseLine_channel7;
+    float baseLineError_channel7;
     float ampMax_channel7;
     float timeAmpMax_channel7;
     float timeConstFrac_channel7;
     vector<float> waveForm_channel8;
-    float baseLine_channel8;
+    float baseLine_channel8; 
+    float baseLineError_channel8;
     float ampMax_channel8;
     float timeAmpMax_channel8;
     float timeConstFrac_channel8;
@@ -112,47 +129,56 @@ int main(int argc, char** argv)
     nt->Branch("ampFraction",&ampFraction_output,"ampFraction/F"); 
     nt->Branch("timeBaseLine",&timeBaseLine_output,"timeBaseLine/F"); 
     nt->Branch("waveForm_Trigger","std::vector<float>",&waveForm_Trigger); 
-    nt->Branch("baseLine_Trigger",&baseLine_Trigger,"baseLine_Trigger/F"); 
+    nt->Branch("baseLine_Trigger",&baseLine_Trigger,"baseLine_Trigger/F");  
+    nt->Branch("baseLineError_Trigger",&baseLineError_Trigger,"baseLineError_Trigger/F"); 
     nt->Branch("ampMax_Trigger",&ampMax_Trigger,"ampMax_Trigger/F"); 
     nt->Branch("timeAmpMax_Trigger",&timeAmpMax_Trigger,"timeAmpMax_Trigger/F"); 
     nt->Branch("timeConstFrac_Trigger",&timeConstFrac_Trigger,"timeConstFrac_Trigger/F"); 
     nt->Branch("waveForm_channel1","std::vector<float>",&waveForm_channel1);  
     nt->Branch("baseLine_channel1",&baseLine_channel1,"baseLine_channel1/F"); 
+    nt->Branch("baseLineError_channel1",&baseLineError_channel1,"baseLineError_channel1/F"); 
     nt->Branch("ampMax_channel1",&ampMax_channel1,"ampMax_channel1/F"); 
     nt->Branch("timeAmpMax_channel1",&timeAmpMax_channel1,"timeAmpMax_channel1/F"); 
     nt->Branch("timeConstFrac_channel1",&timeConstFrac_channel1,"timeConstFrac_channel1/F"); 
     nt->Branch("waveForm_channel2","std::vector<float>",&waveForm_channel2); 
     nt->Branch("baseLine_channel2",&baseLine_channel2,"baseLine_channel2/F"); 
+    nt->Branch("baseLineError_channel2",&baseLineError_channel2,"baseLineError_channel2/F"); 
     nt->Branch("ampMax_channel2",&ampMax_channel2,"ampMax_channel2/F"); 
     nt->Branch("timeAmpMax_channel2",&timeAmpMax_channel2,"timeAmpMax_channel2/F"); 
     nt->Branch("timeConstFrac_channel2",&timeConstFrac_channel2,"timeConstFrac_channel2/F");
     nt->Branch("waveForm_channel3","std::vector<float>",&waveForm_channel3); 
     nt->Branch("baseLine_channel3",&baseLine_channel3,"baseLine_channel3/F"); 
+    nt->Branch("baseLineError_channel3",&baseLineError_channel3,"baseLineError_channel3/F"); 
     nt->Branch("ampMax_channel3",&ampMax_channel3,"ampMax_channel3/F"); 
     nt->Branch("timeAmpMax_channel3",&timeAmpMax_channel3,"timeAmpMax_channel3/F"); 
     nt->Branch("timeConstFrac_channel3",&timeConstFrac_channel3,"timeConstFrac_channel3/F");
     nt->Branch("waveForm_channel4","std::vector<float>",&waveForm_channel4); 
     nt->Branch("baseLine_channel4",&baseLine_channel4,"baseLine_channel4/F"); 
+    nt->Branch("baseLineError_channel4",&baseLineError_channel4,"baseLineError_channel4/F"); 
     nt->Branch("ampMax_channel4",&ampMax_channel4,"ampMax_channel4/F"); 
     nt->Branch("timeAmpMax_channel4",&timeAmpMax_channel4,"timeAmpMax_channel4/F"); 
     nt->Branch("timeConstFrac_channel4",&timeConstFrac_channel4,"timeConstFrac_channel4/F");
     nt->Branch("waveForm_channel5","std::vector<float>",&waveForm_channel5);
     nt->Branch("baseLine_channel5",&baseLine_channel5,"baseLine_channel5/F"); 
+    nt->Branch("baseLineError_channel5",&baseLineError_channel5,"baseLineError_channel5/F"); 
     nt->Branch("ampMax_channel5",&ampMax_channel5,"ampMax_channel5/F");  
     nt->Branch("timeAmpMax_channel5",&timeAmpMax_channel5,"timeAmpMax_channel5/F"); 
     nt->Branch("timeConstFrac_channel5",&timeConstFrac_channel5,"timeConstFrac_channel5/F");
     nt->Branch("waveForm_channel6","std::vector<float>",&waveForm_channel6); 
     nt->Branch("baseLine_channel6",&baseLine_channel6,"baseLine_channel6/F"); 
+    nt->Branch("baseLineError_channel6",&baseLineError_channel6,"baseLineError_channel6/F"); 
     nt->Branch("ampMax_channel6",&ampMax_channel6,"ampMax_channel6/F"); 
     nt->Branch("timeAmpMax_channel6",&timeAmpMax_channel6,"timeAmpMax_channel6/F"); 
     nt->Branch("timeConstFrac_channel6",&timeConstFrac_channel6,"timeConstFrac_channel6/F");
     nt->Branch("waveForm_channel7","std::vector<float>",&waveForm_channel7); 
     nt->Branch("baseLine_channel7",&baseLine_channel7,"baseLine_channel7/F"); 
+    nt->Branch("baseLineError_channel7",&baseLineError_channel7,"baseLineError_channel7/F"); 
     nt->Branch("ampMax_channel7",&ampMax_channel7,"ampMax_channel7/F"); 
     nt->Branch("timeAmpMax_channel7",&timeAmpMax_channel7,"timeAmpMax_channel7/F"); 
     nt->Branch("timeConstFrac_channel7",&timeConstFrac_channel7,"timeConstFrac_channel7/F");
     nt->Branch("waveForm_channel8","std::vector<float>",&waveForm_channel8);
     nt->Branch("baseLine_channel8",&baseLine_channel8,"baseLine_channel8/F"); 
+    nt->Branch("baseLineError_channel8",&baseLineError_channel8,"baseLineError_channel8/F"); 
     nt->Branch("ampMax_channel8",&ampMax_channel8,"ampMax_channel8/F"); 
     nt->Branch("timeAmpMax_channel8",&timeAmpMax_channel8,"timeAmpMax_channel8/F"); 
     nt->Branch("timeConstFrac_channel8",&timeConstFrac_channel8,"timeConstFrac_channel8/F");
@@ -173,9 +199,20 @@ int main(int argc, char** argv)
     string line;
     int ifile=0;
 
+    std::vector<int> vec_run;
     std::vector<float> tmp;
     std::vector<float> tmp_baseline;
     std::map<float,int> map_AmpTm;
+
+    std::map<int,std::map<int,TH1F*> > h_WF_Trigger;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel1; 
+    std::map<int,std::map<int,TH1F*> > h_WF_channel2;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel3;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel4;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel5;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel6;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel7;
+    std::map<int,std::map<int,TH1F*> > h_WF_channel8;
     
     bool isNegative[9];
     for(int ii = 0; ii < 9; ii++)
@@ -206,6 +243,7 @@ int main(int argc, char** argv)
       for(std::string each; getline(split_run, each, split_char); tokens_run.push_back(each));
     
       run = ::atoi(tokens_run.at(1).c_str());
+      vec_run.push_back(run);
 
       //read data
       FILE* input;
@@ -261,6 +299,16 @@ int main(int argc, char** argv)
         baseLine_channel7 = 0.;
         baseLine_channel8 = 0.;
 
+        baseLineError_Trigger = 0.;
+        baseLineError_channel1 = 0.;
+        baseLineError_channel2 = 0.;
+        baseLineError_channel3 = 0.;
+        baseLineError_channel4 = 0.;
+        baseLineError_channel5 = 0.;
+        baseLineError_channel6 = 0.;
+        baseLineError_channel7 = 0.;
+        baseLineError_channel8 = 0.;
+
         ampMax_Trigger = 0.;
         ampMax_channel1 = 0.;
         ampMax_channel2 = 0.;
@@ -302,6 +350,7 @@ int main(int argc, char** argv)
             }
 
             float baseline = computeMean(tmp_baseline);
+            float baseline_error = computeError(tmp_baseline);
 
             std::sort(tmp.begin(),tmp.end());
             
@@ -325,8 +374,10 @@ int main(int argc, char** argv)
 		if(absAmp < absFrac) break;
 		ref = iSample;
             }
-
+            
 	    tmpTimeConstFrac = findTimeConstFrac((ref-1)*BinToTime,channels[iCh].at((ref-1)+nSize*i),ref*BinToTime,channels[iCh].at(ref+nSize*i),(ref+1)*BinToTime,channels[iCh].at((ref+1)+nSize*i),ampFraction,tmpAmp);
+
+            char histoName[200];
 
             if(iCh == 0)
             {
@@ -334,9 +385,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_Trigger.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_Trigger = baseline;
+               baseLineError_Trigger = baseline_error;
                ampMax_Trigger = fabs(tmpAmp-baseline);
                timeAmpMax_Trigger = BinToTime*tmpTime;   
                timeConstFrac_Trigger = tmpTimeConstFrac;     
+               
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_Trigger_%d_%d",run,event);  
+                  h_WF_Trigger[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_Trigger.size(); ii++)
+                      h_WF_Trigger[run][event]->SetBinContent(ii,waveForm_Trigger.at(ii));   
+               }
             }
 
             if(iCh == 1)
@@ -345,9 +406,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel1.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel1 = baseline;
+               baseLineError_channel1 = baseline_error;
                ampMax_channel1 = fabs(tmpAmp-baseline);
                timeAmpMax_channel1 = BinToTime*tmpTime; 
-               timeConstFrac_channel1 = tmpTimeConstFrac;    
+               timeConstFrac_channel1 = tmpTimeConstFrac;  
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel1_%d_%d",run,event);  
+                  h_WF_channel1[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel1.size(); ii++)
+                      h_WF_channel1[run][event]->SetBinContent(ii,waveForm_channel1.at(ii));   
+               }  
  
             }
 
@@ -357,9 +428,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel2.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel2 = baseline;
+               baseLineError_channel2 = baseline_error;
                ampMax_channel2 = fabs(tmpAmp-baseline);
                timeAmpMax_channel2 = BinToTime*tmpTime;  
                timeConstFrac_channel2 = tmpTimeConstFrac;  
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel2_%d_%d",run,event);  
+                  h_WF_channel2[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel2.size(); ii++)
+                      h_WF_channel2[run][event]->SetBinContent(ii,waveForm_channel2.at(ii));   
+               } 
 
             }
              
@@ -369,9 +450,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel3.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel3 = baseline;
+               baseLineError_channel3 = baseline_error;
                ampMax_channel3 = fabs(tmpAmp-baseline);
                timeAmpMax_channel3 = BinToTime*tmpTime;  
                timeConstFrac_channel3 = tmpTimeConstFrac;  
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel3_%d_%d",run,event);  
+                  h_WF_channel3[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel3.size(); ii++)
+                      h_WF_channel3[run][event]->SetBinContent(ii,waveForm_channel3.at(ii));   
+               } 
                
             }
 
@@ -381,9 +472,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel4.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel4 = baseline;
+               baseLineError_channel4 = baseline_error;
                ampMax_channel4 = fabs(tmpAmp-baseline);
                timeAmpMax_channel4 = BinToTime*tmpTime;
-               timeConstFrac_channel4 = tmpTimeConstFrac;     
+               timeConstFrac_channel4 = tmpTimeConstFrac;   
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel4_%d_%d",run,event);  
+                  h_WF_channel4[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel4.size(); ii++)
+                      h_WF_channel4[run][event]->SetBinContent(ii,waveForm_channel4.at(ii));   
+               }   
 
             }
 
@@ -393,9 +494,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel5.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel5 = baseline;
+               baseLineError_channel5 = baseline_error;
                ampMax_channel5 = fabs(tmpAmp-baseline);
                timeAmpMax_channel5 = BinToTime*tmpTime;  
-               timeConstFrac_channel5 = tmpTimeConstFrac;  
+               timeConstFrac_channel5 = tmpTimeConstFrac; 
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel5_%d_%d",run,event);  
+                  h_WF_channel5[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel5.size(); ii++)
+                      h_WF_channel5[run][event]->SetBinContent(ii,waveForm_channel5.at(ii));   
+               }  
 
             }
 
@@ -405,9 +516,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel6.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel6 = baseline;
+               baseLineError_channel6 = baseline_error;
                ampMax_channel6 = fabs(tmpAmp-baseline);
                timeAmpMax_channel6 = BinToTime*tmpTime;   
-               timeConstFrac_channel6 = tmpTimeConstFrac;  
+               timeConstFrac_channel6 = tmpTimeConstFrac; 
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel6_%d_%d",run,event);  
+                  h_WF_channel6[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel6.size(); ii++)
+                      h_WF_channel6[run][event]->SetBinContent(ii,waveForm_channel6.at(ii));   
+               }  
 
             }
 
@@ -417,9 +538,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel7.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel7 = baseline;
+               baseLineError_channel7 = baseline_error;
                ampMax_channel7 = fabs(tmpAmp-baseline);
                timeAmpMax_channel7 = BinToTime*tmpTime;
                timeConstFrac_channel7 = tmpTimeConstFrac;     
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel7_%d_%d",run,event);  
+                  h_WF_channel7[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel7.size(); ii++)
+                      h_WF_channel7[run][event]->SetBinContent(ii,waveForm_channel7.at(ii));   
+               } 
 
             }
 
@@ -429,9 +560,19 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel8.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel8 = baseline;
+               baseLineError_channel8 = baseline_error;
                ampMax_channel8 = fabs(tmpAmp-baseline);
                timeAmpMax_channel8 = BinToTime*tmpTime;  
-               timeConstFrac_channel8 = tmpTimeConstFrac;  
+               timeConstFrac_channel8 = tmpTimeConstFrac; 
+
+               if(saveWFHistos == 1){
+
+                  sprintf(histoName, "WF_channel8_%d_%d",run,event);  
+                  h_WF_channel8[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+
+                  for(unsigned int ii = 0; ii < waveForm_channel8.size(); ii++)
+                      h_WF_channel8[run][event]->SetBinContent(ii,waveForm_channel8.at(ii));   
+               }  
           
             }
  
@@ -482,11 +623,176 @@ int main(int argc, char** argv)
 
     }
 
-    TFile *f = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
-    f->cd();
+    TFile *f1 = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
+    f1->cd();
     nt->Write("nt");
-    f->Close();
+    f1->Close();
+    
+    if(saveWFHistos == 1){
+      TFile *f2 = new TFile(("histos_"+std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
+      f2->cd();
+      for(unsigned int ii = 0; ii < h_WF_Trigger.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++)
+            h_WF_Trigger[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel1.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel1[ii].size(); jj++)
+            h_WF_channel1[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel2.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel2[ii].size(); jj++)
+            h_WF_channel2[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel3.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel3[ii].size(); jj++)
+            h_WF_channel3[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel4.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel4[ii].size(); jj++)
+            h_WF_channel4[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel5.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel5[ii].size(); jj++)
+            h_WF_channel5[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel6.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel6[ii].size(); jj++)
+            h_WF_channel6[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel7.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel7[ii].size(); jj++)
+            h_WF_channel7[ii][jj]->Write();
+      for(unsigned int ii = 0; ii < h_WF_channel8.size(); ii++)
+        for(unsigned int jj = 0; jj < h_WF_channel8[ii].size(); jj++)
+            h_WF_channel8[ii][jj]->Write();
+      f2->Close();
+    }
 
+    if(saveWFHistos == 1){
+
+       std::sort(vec_run.begin(),vec_run.end());
+
+       if(h_WF_Trigger.size() != 0){
+
+          TCanvas* c0 = new TCanvas("c0","c0");
+          c0 -> cd();
+            
+          h_WF_Trigger[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_Trigger.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++)
+               h_WF_Trigger[ii][jj]->Draw("same"); 
+               
+          c0 -> Print("WF_trigger_total.png","png");
+          c0 -> Print("WF_trigger_total.pdf","pdf");
+       }
+      
+       if(h_WF_channel1.size() != 0){
+
+          TCanvas* c1 = new TCanvas("c1","c1");
+          c1 -> cd();
+
+          h_WF_channel1[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel1.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel1[ii].size(); jj++)
+               h_WF_channel1[ii][jj]->Draw("same");
+
+          c1 -> Print("WF_channel1_total.png","png");
+          c1 -> Print("WF_channel1_total.pdf","pdf");
+       }
+       
+       if(h_WF_channel2.size() != 0){
+
+          TCanvas* c2 = new TCanvas("c2","c2");
+          c2 -> cd();
+
+          h_WF_channel2[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel2.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel2[ii].size(); jj++)
+               h_WF_channel2[ii][jj]->Draw("same");
+
+          c2 -> Print("WF_channel2_total.png","png");
+          c2 -> Print("WF_channel2_total.pdf","pdf");
+       }
+        
+       if(h_WF_channel3.size() != 0){   
+
+          TCanvas* c3 = new TCanvas("c3","c3");
+          c3 -> cd();
+
+          h_WF_channel3[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel3.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel3[ii].size(); jj++)
+               h_WF_channel3[ii][jj]->Draw("same");
+
+          c3 -> Print("WF_channel3_total.png","png");
+          c3 -> Print("WF_channel3_total.pdf","pdf");
+       }
+       
+
+       if(h_WF_channel4.size() != 0){
+       
+          TCanvas* c4 = new TCanvas("c4","c4");
+          c4 -> cd();
+
+          h_WF_channel4[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel4.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel4[ii].size(); jj++)
+               h_WF_channel4[ii][jj]->Draw("same");
+
+         c4 -> Print("WF_channel4_total.png","png");
+         c4 -> Print("WF_channel4_total.pdf","pdf");
+       }
+  
+       if(h_WF_channel5.size() != 0){
+
+          TCanvas* c5 = new TCanvas("c5","c5");
+          c5 -> cd();
+ 
+          h_WF_channel5[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel5.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel5[ii].size(); jj++)
+               h_WF_channel5[ii][jj]->Draw("same");
+
+          c5 -> Print("WF_channel5_total.png","png");
+          c5 -> Print("WF_channel5_total.pdf","pdf");
+       }
+      
+       if(h_WF_channel6.size() != 0){
+
+          TCanvas* c6 = new TCanvas("c6","c6");
+          c6 -> cd();
+
+          h_WF_channel6[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel6.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel6[ii].size(); jj++)
+               h_WF_channel6[ii][jj]->Draw("same");
+
+          c6 -> Print("WF_channel6_total.png","png");
+          c6 -> Print("WF_channel6_total.pdf","pdf");
+       }
+ 
+       if(h_WF_channel7.size() != 0){
+       
+          TCanvas* c7 = new TCanvas("c7","c7");
+          c7 -> cd();
+
+          h_WF_channel7[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel7.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel7[ii].size(); jj++)
+               h_WF_channel7[ii][jj]->Draw("same");
+
+          c7 -> Print("WF_channel7_total.png","png");
+          c7 -> Print("WF_channel7_total.pdf","pdf");
+       }
+       
+       if(h_WF_channel8.size() != 0){
+       
+          TCanvas* c8 = new TCanvas("c8","c8");
+          c8 -> cd();
+
+          h_WF_channel8[vec_run.at(0)][0]->Draw();
+          for(unsigned int ii = 0; ii < h_WF_channel8.size(); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel8[ii].size(); jj++)
+               h_WF_channel8[ii][jj]->Draw("same");
+
+          c8 -> Print("WF_channel8_total.png","png");
+          c8 -> Print("WF_channel8_total.pdf","pdf");
+       }
+    } 
+    
     gSystem -> Exec("rm input.tmp"); 
 }
 
@@ -508,4 +814,14 @@ float computeMean(std::vector<float> sample)
 
   return mean/sample.size();
 }
-    
+
+float computeError(std::vector<float> sample)
+{
+  float error = 0.; 
+  float mean = computeMean(sample);
+
+  for(unsigned int ii = 0; ii < sample.size(); ii++)
+      error = error + (sample.at(ii)-mean)*(sample.at(ii)-mean);  
+
+  return sqrt(error/(sample.size()-1))/sqrt(sample.size()); 
+}
