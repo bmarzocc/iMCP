@@ -393,10 +393,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_Trigger_%d_%d",run,event);  
-                  h_WF_Trigger[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_Trigger[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_Trigger.size(); ii++)
-                      h_WF_Trigger[run][event]->SetBinContent(ii,waveForm_Trigger.at(ii));   
+                      h_WF_Trigger[run][event]->SetBinContent(ii+1,waveForm_Trigger.at(ii));   
                }
             }
 
@@ -414,10 +414,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel1_%d_%d",run,event);  
-                  h_WF_channel1[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel1[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel1.size(); ii++)
-                      h_WF_channel1[run][event]->SetBinContent(ii,waveForm_channel1.at(ii));   
+                      h_WF_channel1[run][event]->SetBinContent(ii+1,waveForm_channel1.at(ii));   
                }  
  
             }
@@ -436,10 +436,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel2_%d_%d",run,event);  
-                  h_WF_channel2[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel2[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel2.size(); ii++)
-                      h_WF_channel2[run][event]->SetBinContent(ii,waveForm_channel2.at(ii));   
+                      h_WF_channel2[run][event]->SetBinContent(ii+1,waveForm_channel2.at(ii));   
                } 
 
             }
@@ -458,10 +458,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel3_%d_%d",run,event);  
-                  h_WF_channel3[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel3[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel3.size(); ii++)
-                      h_WF_channel3[run][event]->SetBinContent(ii,waveForm_channel3.at(ii));   
+                      h_WF_channel3[run][event]->SetBinContent(ii+1,waveForm_channel3.at(ii));   
                } 
                
             }
@@ -480,10 +480,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel4_%d_%d",run,event);  
-                  h_WF_channel4[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel4[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel4.size(); ii++)
-                      h_WF_channel4[run][event]->SetBinContent(ii,waveForm_channel4.at(ii));   
+                      h_WF_channel4[run][event]->SetBinContent(ii+1,waveForm_channel4.at(ii));   
                }   
 
             }
@@ -502,10 +502,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel5_%d_%d",run,event);  
-                  h_WF_channel5[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel5[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel5.size(); ii++)
-                      h_WF_channel5[run][event]->SetBinContent(ii,waveForm_channel5.at(ii));   
+                      h_WF_channel5[run][event]->SetBinContent(ii+1,waveForm_channel5.at(ii));   
                }  
 
             }
@@ -524,10 +524,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel6_%d_%d",run,event);  
-                  h_WF_channel6[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel6[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel6.size(); ii++)
-                      h_WF_channel6[run][event]->SetBinContent(ii,waveForm_channel6.at(ii));   
+                      h_WF_channel6[run][event]->SetBinContent(ii+1,waveForm_channel6.at(ii));   
                }  
 
             }
@@ -546,10 +546,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel7_%d_%d",run,event);  
-                  h_WF_channel7[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel7[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel7.size(); ii++)
-                      h_WF_channel7[run][event]->SetBinContent(ii,waveForm_channel7.at(ii));   
+                      h_WF_channel7[run][event]->SetBinContent(ii+1,waveForm_channel7.at(ii));   
                } 
 
             }
@@ -568,10 +568,10 @@ int main(int argc, char** argv)
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_channel8_%d_%d",run,event);  
-                  h_WF_channel8[run][event] = new TH1F(histoName,histoName,1000,0.,1000.);
+                  h_WF_channel8[run][event] = new TH1F(histoName,histoName,nSize,0.,float(nSize)*BinToTime);
 
                   for(unsigned int ii = 0; ii < waveForm_channel8.size(); ii++)
-                      h_WF_channel8[run][event]->SetBinContent(ii,waveForm_channel8.at(ii));   
+                      h_WF_channel8[run][event]->SetBinContent(ii+1,waveForm_channel8.at(ii));   
                }  
           
             }
