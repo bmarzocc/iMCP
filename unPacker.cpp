@@ -35,7 +35,7 @@ using namespace std;
 
 const float BinToTime = 0.2;
 
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp, float baseline);
+float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp);
 float computeMean(std::vector<float> sample);
 float computeError(std::vector<float> sample);
 
@@ -385,7 +385,7 @@ int main(int argc, char** argv)
             float x2 = ref*BinToTime;     float y2 = channels[iCh].at(ref+nSize*i)-baseline;
             float x3 = (ref+1)*BinToTime; float y3 = channels[iCh].at((ref+1)+nSize*i)-baseline;
             
-	    tmpTimeConstFrac = findTimeConstFrac(x1,y1,x2,y2,x3,y3,ampFraction,tmpAmp,baseline);
+	    tmpTimeConstFrac = findTimeConstFrac(x1,y1,x2,y2,x3,y3,ampFraction,tmpAmp-baseline);
 
             char histoName[200];
 
@@ -981,7 +981,7 @@ int main(int argc, char** argv)
     gSystem -> Exec("rm input.tmp"); 
 }
 
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp, float baseline)
+float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp)
 {
   float denom = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
   float m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denom;
