@@ -27,6 +27,7 @@
 #include "TH1F.h"
 #include "TString.h"
 #include "TSystem.h"
+#include "TStyle.h"
 #include "TTree.h"
 #include "TFile.h"
 
@@ -34,7 +35,7 @@ using namespace std;
 
 const float BinToTime = 0.2;
 
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp);
+float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp, float baseline);
 float computeMean(std::vector<float> sample);
 float computeError(std::vector<float> sample);
 
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
     int saveWFHistos = atoi(argv[5]);
   
     std::cout << "runFolder    = " << runFolder << std::endl;
-    std::cout << "ampFraction  = " << ampFraction << std::endl;
+    std::cout << "ampFraction  = " << ampFraction << "%" << std::endl;
     std::cout << "timeBaseLine = " << timeBaseLine << std::endl;
     std::cout << "saveWF       = " << saveWF << std::endl;
     std::cout << "saveWFHistos = " << saveWFHistos << std::endl;
@@ -213,11 +214,6 @@ int main(int argc, char** argv)
     std::map<int,std::map<int,TH1F*> > h_WF_channel6;
     std::map<int,std::map<int,TH1F*> > h_WF_channel7;
     std::map<int,std::map<int,TH1F*> > h_WF_channel8;
-    
-    bool isNegative[9];
-    for(int ii = 0; ii < 9; ii++)
-        isNegative[ii] = true;
-    isNegative[3] = false;
 
     while(getline(inFile,line)){
 
@@ -257,11 +253,21 @@ int main(int argc, char** argv)
         return -1;
       }   
 
-      BinHeader = (int*) malloc (sizeof(int)*3);
-      fread(BinHeader, sizeof(int), 3, input);
-      iEvent = BinHeader[0];
-      nSize = BinHeader[1];
-      nCh = BinHeader[2];
+      BinHeader = (int*) malloc (sizeof(int)*10);
+      fread(BinHeader, sizeof(int), 10, input);
+      nSize = BinHeader[0];
+      nCh = BinHeader[1];
+
+      int isNegative[9];
+      isNegative[0] = -1;
+      for(int ii = 1; ii < 9; ii++)
+          isNegative[ii] = BinHeader[ii+1];
+
+
+      //for(int ii = 0; ii < 10; ii++)
+      //std::cout << "BinHeader[" << ii << "] = " << BinHeader[ii] << std::endl;
+
+      fread(&iEvent, sizeof(int),1,input);
       
       float* buffer = (float*) malloc (sizeof(float)*nSize*(nCh+1));
     
@@ -277,8 +283,7 @@ int main(int argc, char** argv)
             }
         }
         nEvent++;
-        fread(BinHeader, sizeof(int), 3, input);
-        iEvent = BinHeader[0];
+        fread(&iEvent, sizeof(int), 1, input);
       }
 
       //Fill tree
@@ -287,7 +292,7 @@ int main(int argc, char** argv)
 
         event = eventNumber.at(i);
 
-        cout << "Event: " << event << endl;
+        if(event%100==0) cout << "--- Reading entry = " << event << endl;
 
         baseLine_Trigger = 0.;
         baseLine_channel1 = 0.;
@@ -358,7 +363,8 @@ int main(int argc, char** argv)
             int tmpTime = 0;
             float tmpTimeConstFrac = 0.;
 
-            if(isNegative[iCh] == true){
+            //std::cout << "isNegative[" << iCh << "] = " << isNegative[iCh] << std::endl;
+            if(isNegative[iCh] == -1){
                tmpAmp = tmp.at(0);
                tmpTime = map_AmpTm[tmp.at(0)];
             }else{
@@ -374,8 +380,12 @@ int main(int argc, char** argv)
 		if(absAmp < absFrac) break;
 		ref = iSample;
             }
+
+            float x1 = (ref-1)*BinToTime; float y1 = channels[iCh].at((ref-1)+nSize*i)-baseline;
+            float x2 = ref*BinToTime;     float y2 = channels[iCh].at(ref+nSize*i)-baseline;
+            float x3 = (ref+1)*BinToTime; float y3 = channels[iCh].at((ref+1)+nSize*i)-baseline;
             
-	    tmpTimeConstFrac = findTimeConstFrac((ref-1)*BinToTime,channels[iCh].at((ref-1)+nSize*i),ref*BinToTime,channels[iCh].at(ref+nSize*i),(ref+1)*BinToTime,channels[iCh].at((ref+1)+nSize*i),ampFraction,tmpAmp);
+	    tmpTimeConstFrac = findTimeConstFrac(x1,y1,x2,y2,x3,y3,ampFraction,tmpAmp,baseline);
 
             char histoName[200];
 
@@ -629,7 +639,7 @@ int main(int argc, char** argv)
     f1->Close();
     
     if(saveWFHistos == 1){
-      TFile *f2 = new TFile(("histos_"+std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
+      TFile *f2 = new TFile(("histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
       f2->cd();
       for(unsigned int ii = 0; ii < h_WF_Trigger.size(); ii++)
         for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++)
@@ -662,21 +672,44 @@ int main(int argc, char** argv)
     }
 
     if(saveWFHistos == 1){
+       
+       gStyle->SetOptStat(0000); 
 
        std::sort(vec_run.begin(),vec_run.end());
+
+       std::vector<float> max, min;
 
        if(h_WF_Trigger.size() != 0){
 
           TCanvas* c0 = new TCanvas("c0","c0");
           c0 -> cd();
             
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++){
+               max.push_back(h_WF_Trigger[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_Trigger[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_Trigger[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_Trigger[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_Trigger[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_Trigger[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_Trigger[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_Trigger.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++)
                h_WF_Trigger[ii][jj]->Draw("same"); 
                
           c0 -> Print("WF_trigger_total.png","png");
           c0 -> Print("WF_trigger_total.pdf","pdf");
+
+          max.clear();
+          min.clear();
        }
       
        if(h_WF_channel1.size() != 0){
@@ -684,27 +717,65 @@ int main(int argc, char** argv)
           TCanvas* c1 = new TCanvas("c1","c1");
           c1 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel1[ii].size(); jj++){
+               max.push_back(h_WF_channel1[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel1[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel1[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel1[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel1[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel1[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel1[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel1.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel1[ii].size(); jj++)
                h_WF_channel1[ii][jj]->Draw("same");
 
           c1 -> Print("WF_channel1_total.png","png");
           c1 -> Print("WF_channel1_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
        
        if(h_WF_channel2.size() != 0){
 
           TCanvas* c2 = new TCanvas("c2","c2");
           c2 -> cd();
-
+          
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel2[ii].size(); jj++){
+               max.push_back(h_WF_channel2[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel2[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel2[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel2[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel2[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel2[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel2[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel2.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel2[ii].size(); jj++)
                h_WF_channel2[ii][jj]->Draw("same");
 
           c2 -> Print("WF_channel2_total.png","png");
           c2 -> Print("WF_channel2_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
         
        if(h_WF_channel3.size() != 0){   
@@ -712,13 +783,32 @@ int main(int argc, char** argv)
           TCanvas* c3 = new TCanvas("c3","c3");
           c3 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel3[ii].size(); jj++){
+               max.push_back(h_WF_channel3[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel3[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel3[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel3[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel3[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel3[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel3[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel3.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel3[ii].size(); jj++)
                h_WF_channel3[ii][jj]->Draw("same");
 
           c3 -> Print("WF_channel3_total.png","png");
           c3 -> Print("WF_channel3_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
        
 
@@ -727,13 +817,32 @@ int main(int argc, char** argv)
           TCanvas* c4 = new TCanvas("c4","c4");
           c4 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel4[ii].size(); jj++){
+               max.push_back(h_WF_channel4[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel4[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel4[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel4[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel4[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel4[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel4[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel4.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel4[ii].size(); jj++)
                h_WF_channel4[ii][jj]->Draw("same");
 
-         c4 -> Print("WF_channel4_total.png","png");
-         c4 -> Print("WF_channel4_total.pdf","pdf");
+          c4 -> Print("WF_channel4_total.png","png");
+          c4 -> Print("WF_channel4_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
   
        if(h_WF_channel5.size() != 0){
@@ -741,13 +850,32 @@ int main(int argc, char** argv)
           TCanvas* c5 = new TCanvas("c5","c5");
           c5 -> cd();
  
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel5[ii].size(); jj++){
+               max.push_back(h_WF_channel5[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel5[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel5[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel5[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel5[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel5[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel5[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel5.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel5[ii].size(); jj++)
                h_WF_channel5[ii][jj]->Draw("same");
 
           c5 -> Print("WF_channel5_total.png","png");
           c5 -> Print("WF_channel5_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
       
        if(h_WF_channel6.size() != 0){
@@ -755,13 +883,32 @@ int main(int argc, char** argv)
           TCanvas* c6 = new TCanvas("c6","c6");
           c6 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel6[ii].size(); jj++){
+               max.push_back(h_WF_channel6[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel6[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel6[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel6[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel6[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel6[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel6[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel6.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel6[ii].size(); jj++)
                h_WF_channel6[ii][jj]->Draw("same");
 
           c6 -> Print("WF_channel6_total.png","png");
           c6 -> Print("WF_channel6_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
  
        if(h_WF_channel7.size() != 0){
@@ -769,13 +916,32 @@ int main(int argc, char** argv)
           TCanvas* c7 = new TCanvas("c7","c7");
           c7 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel7[ii].size(); jj++){
+               max.push_back(h_WF_channel7[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel7[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel7[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel7[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel7[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel7[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel7[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel7.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel7[ii].size(); jj++)
                h_WF_channel7[ii][jj]->Draw("same");
 
           c7 -> Print("WF_channel7_total.png","png");
           c7 -> Print("WF_channel7_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
        
        if(h_WF_channel8.size() != 0){
@@ -783,20 +949,39 @@ int main(int argc, char** argv)
           TCanvas* c8 = new TCanvas("c8","c8");
           c8 -> cd();
 
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
+           for(unsigned int jj = 0; jj < h_WF_channel8[ii].size(); jj++){
+               max.push_back(h_WF_channel8[ii][jj]->GetMaximum()); 
+               min.push_back(h_WF_channel8[ii][jj]->GetMinimum()); 
+           }
+           
+          std::sort(max.begin(),max.end());
+          std::sort(min.begin(),min.end());
+ 
+          float h_min = min.at(0);
+          float h_max = max.at(max.size()-1);
+          if(h_max > 0.) h_WF_channel8[vec_run.at(0)][0]->SetMaximum(h_max*1.05);
+          else h_WF_channel8[vec_run.at(0)][0]->SetMaximum(h_max*0.95);
+          if(h_min > 0.)h_WF_channel8[vec_run.at(0)][0]->SetMinimum(h_min*0.95); 
+          else h_WF_channel8[vec_run.at(0)][0]->SetMinimum(h_min*1.05); 
+          
           h_WF_channel8[vec_run.at(0)][0]->Draw();
-          for(unsigned int ii = 0; ii < h_WF_channel8.size(); ii++)
+          for(unsigned int ii = vec_run.at(0); ii <= vec_run.at(vec_run.size()-1); ii++)
            for(unsigned int jj = 0; jj < h_WF_channel8[ii].size(); jj++)
                h_WF_channel8[ii][jj]->Draw("same");
 
           c8 -> Print("WF_channel8_total.png","png");
           c8 -> Print("WF_channel8_total.pdf","pdf");
+
+          max.clear();
+          min.clear(); 
        }
     } 
     
     gSystem -> Exec("rm input.tmp"); 
 }
 
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp)
+float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp, float baseline)
 {
   float denom = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
   float m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denom;
