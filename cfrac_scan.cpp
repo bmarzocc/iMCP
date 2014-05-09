@@ -28,18 +28,19 @@
 
 using namespace std;
 
-double Trigger(int x1, int xm, vector<float> samples, float AmpFraction, int Npar = 3, float sampling = 0.2)
+float Trigger(int x1, int xm, vector<float> samples, float AmpFraction, int Npar = 3, float sampling = 0.2)
 {
-    double xx= 0.;
-    double xy= 0.;
-    double Sx = 0.;
-    double Sy = 0.;
-    double Sxx = 0.;
-    double Sxy = 0.;
+    float xx= 0.;
+    float xy= 0.;
+    float Sx = 0.;
+    float Sy = 0.;
+    float Sxx = 0.;
+    float Sxy = 0.;
+    float Chi2 = 0.;
 
     for(int n=-(Npar-1)/2; n<=(Npar-1)/2; n++)
     {
-        if(x1+n<0) break;
+        if(x1+n<0) continue;
         xx = (x1+n)*(x1+n)*0.2*0.2;
         xy = (x1+n)*0.2*(samples.at(x1+n));
         Sx = Sx + (x1+n)*0.2;
@@ -48,13 +49,20 @@ double Trigger(int x1, int xm, vector<float> samples, float AmpFraction, int Npa
         Sxy = Sxy + xy;
     }
 
-    double Delta = Npar*Sxx - Sx*Sx;
-    double A = (Sxx*Sy - Sx*Sxy) / Delta;
-    double B = (Npar*Sxy - Sx*Sy) / Delta;
+    float Delta = Npar*Sxx - Sx*Sx;
+    float A = (Sxx*Sy - Sx*Sxy) / Delta;
+    float B = (Npar*Sxy - Sx*Sy) / Delta;
 
+    float sigma2 = pow(0.2/sqrt(12)*B,2);
+ 
+    for(int n=-(Npar-1)/2; n<=(Npar-1)/2; n++)
+    {
+        if(x1+n<0) continue;
+        Chi2 = Chi2 + pow(samples.at(x1+n) - A - B*((x1+n)*0.2),2)/sigma2;
+    } 
     // A+Bx = AmpFraction * amp
-    double interpolation = (samples.at(xm) * AmpFraction - A) / B;
-    return B;
+    float interpolation = (samples.at(xm) * AmpFraction - A) / B;
+    return Chi2;
 }
 
 //******************************************************************************
@@ -70,12 +78,12 @@ int main(int argc, char** argv)
     int *BinHeader, isNegative[9], nCh=0, nSize=0, iEvent=0, nEvent=0, c=0;
     int x1=0;
     
-    TH1F* double_coinc = new TH1F("difference","difference",2000,-50,50);
+    TH1F* float_coinc = new TH1F("difference","difference",2000,-50,50);
     TGraphErrors* scan = new TGraphErrors();
     scan->SetMarkerStyle(7);
     scan->SetMarkerSize(20);
     scan->SetMarkerColor(kBlue);
-    scan->SetTitle("scan; costant fraction [% ampMax]; Slope [ADC ch/ns]");
+    scan->SetTitle("scan; costant fraction [% ampMax]; Chi^2");//Slope [ADC ch/ns]");
     TApplication* app = new TApplication("app",0,0);
     
     //-----scan loop
@@ -86,7 +94,7 @@ int main(int argc, char** argv)
         string file;
         string path = "WaveForms/";
         
-        TH1F* B_histo = new TH1F("B_histo"+c,"B_histo",2000,-2000,10);
+        TH1F* B_histo = new TH1F("B_histo"+c,"B_histo",100,0,2);
         //-----loop on all the Runs
         while(getline(infile, file))
         {
@@ -166,10 +174,10 @@ int main(int argc, char** argv)
             }
             fclose(input);
         }            
-        B_histo->SetAxisRange(-500,0,"X");
+        //B_histo->SetAxisRange(-500,0,"X");
         B.push_back(B_histo->GetMean());
         sigmaB.push_back(B_histo->GetRMS()/sqrt(B_histo->GetEntries()));
-        cout << B_histo->GetEntries() << endl; 
+        B_histo->DrawClone();
         delete B_histo;
     }
 
@@ -178,7 +186,6 @@ int main(int argc, char** argv)
         scan->SetPoint(j,j+20,B.at(j)); 
         scan->SetPointError(j,0,sigmaB.at(j));
     }
-    TCanvas* c1 = new TCanvas();
     scan->Draw("AP");    
     app->Run();    
 }
