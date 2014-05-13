@@ -38,9 +38,11 @@
 using namespace std;
 
 const float BinToTime = 0.2;
+const float thresAmp = 200.;
+const float thresAmpCh3 = 100.;
 
 float computeMean(std::vector<float> sample);
-float computeError(std::vector<float> sample);
+float computeDispersion(std::vector<float> sample);
 
 int main(int argc, char** argv)
 {
@@ -72,7 +74,9 @@ int main(int argc, char** argv)
 
     vector<float> waveForm_Trigger;
     float baseLine_Trigger;
-    float baseLineError_Trigger;
+    float baselineDispersion_Trigger;
+    float baseLineGlobal_Trigger;
+    float baselineDispersionGlobal_Trigger;
     float ampMax_Trigger;
     float timeAmpMax_Trigger;
     float constFrac_Trigger;
@@ -81,7 +85,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_Trigger;
     vector<float> waveForm_channel1;
     float baseLine_channel1;
-    float baseLineError_channel1;
+    float baselineDispersion_channel1;
+    float baseLineGlobal_channel1;
+    float baselineDispersionGlobal_channel1;
     float ampMax_channel1;
     float timeAmpMax_channel1;
     float constFrac_channel1;
@@ -90,7 +96,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel1;
     vector<float> waveForm_channel2;
     float baseLine_channel2;
-    float baseLineError_channel2;
+    float baselineDispersion_channel2;
+    float baseLineGlobal_channel2;
+    float baselineDispersionGlobal_channel2;
     float ampMax_channel2;
     float timeAmpMax_channel2;
     float constFrac_channel2;
@@ -99,7 +107,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel2;
     vector<float> waveForm_channel3;
     float baseLine_channel3;
-    float baseLineError_channel3;
+    float baselineDispersion_channel3;
+    float baseLineGlobal_channel3;
+    float baselineDispersionGlobal_channel3;
     float ampMax_channel3;
     float timeAmpMax_channel3;
     float constFrac_channel3;
@@ -108,7 +118,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel3;
     vector<float> waveForm_channel4;
     float baseLine_channel4;
-    float baseLineError_channel4;
+    float baselineDispersion_channel4;
+    float baseLineGlobal_channel4;
+    float baselineDispersionGlobal_channel4;
     float ampMax_channel4;
     float timeAmpMax_channel4;
     float constFrac_channel4;
@@ -117,7 +129,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel4;
     vector<float> waveForm_channel5;
     float baseLine_channel5;
-    float baseLineError_channel5;
+    float baselineDispersion_channel5;
+    float baseLineGlobal_channel5;
+    float baselineDispersionGlobal_channel5;
     float ampMax_channel5;
     float timeAmpMax_channel5;
     float constFrac_channel5;
@@ -126,7 +140,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel5;
     vector<float> waveForm_channel6;
     float baseLine_channel6;
-    float baseLineError_channel6;
+    float baselineDispersion_channel6;
+    float baseLineGlobal_channel6;
+    float baselineDispersionGlobal_channel6;
     float ampMax_channel6;
     float timeAmpMax_channel6;
     float constFrac_channel6;
@@ -135,7 +151,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel6;
     vector<float> waveForm_channel7;
     float baseLine_channel7;
-    float baseLineError_channel7;
+    float baselineDispersion_channel7;
+    float baseLineGlobal_channel7;
+    float baselineDispersionGlobal_channel7;
     float ampMax_channel7;
     float timeAmpMax_channel7;
     float constFrac_channel7;
@@ -144,7 +162,9 @@ int main(int argc, char** argv)
     float chi2ConstFrac_channel7;
     vector<float> waveForm_channel8;
     float baseLine_channel8; 
-    float baseLineError_channel8;
+    float baselineDispersion_channel8;
+    float baseLineGlobal_channel8;
+    float baselineDispersionGlobal_channel8;
     float ampMax_channel8;
     float timeAmpMax_channel8;
     float constFrac_channel8;
@@ -161,7 +181,9 @@ int main(int argc, char** argv)
     nt->Branch("timeBaseLine",&timeBaseLine_output,"timeBaseLine/F"); 
     nt->Branch("waveForm_Trigger","std::vector<float>",&waveForm_Trigger); 
     nt->Branch("baseLine_Trigger",&baseLine_Trigger,"baseLine_Trigger/F");  
-    nt->Branch("baseLineError_Trigger",&baseLineError_Trigger,"baseLineError_Trigger/F"); 
+    nt->Branch("baselineDispersion_Trigger",&baselineDispersion_Trigger,"baselineDispersion_Trigger/F"); 
+    nt->Branch("baseLineGlobal_Trigger",&baseLineGlobal_Trigger,"baseLineGlobal_Trigger/F");  
+    nt->Branch("baselineDispersionGlobal_Trigger",&baselineDispersionGlobal_Trigger,"baselineDispersionGlobal_Trigger/F"); 
     nt->Branch("ampMax_Trigger",&ampMax_Trigger,"ampMax_Trigger/F"); 
     nt->Branch("timeAmpMax_Trigger",&timeAmpMax_Trigger,"timeAmpMax_Trigger/F"); 
     nt->Branch("constFrac_Trigger",&constFrac_Trigger,"constFrac_Trigger/F"); 
@@ -170,7 +192,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_Trigger",&chi2ConstFrac_Trigger,"chi2ConstFrac_Trigger/F"); 
     nt->Branch("waveForm_channel1","std::vector<float>",&waveForm_channel1);  
     nt->Branch("baseLine_channel1",&baseLine_channel1,"baseLine_channel1/F"); 
-    nt->Branch("baseLineError_channel1",&baseLineError_channel1,"baseLineError_channel1/F"); 
+    nt->Branch("baselineDispersion_channel1",&baselineDispersion_channel1,"baselineDispersion_channel1/F"); 
+    nt->Branch("baseLineGlobal_channel1",&baseLineGlobal_channel1,"baseLineGlobal_channel1/F");  
+    nt->Branch("baselineDispersionGlobal_channel1",&baselineDispersionGlobal_channel1,"baselineDispersionGlobal_channel1/F"); 
     nt->Branch("ampMax_channel1",&ampMax_channel1,"ampMax_channel1/F"); 
     nt->Branch("timeAmpMax_channel1",&timeAmpMax_channel1,"timeAmpMax_channel1/F"); 
     nt->Branch("constFrac_channel1",&constFrac_channel1,"constFrac_channel1/F"); 
@@ -179,7 +203,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel1",&chi2ConstFrac_channel1,"chi2ConstFrac_channel1/F"); 
     nt->Branch("waveForm_channel2","std::vector<float>",&waveForm_channel2); 
     nt->Branch("baseLine_channel2",&baseLine_channel2,"baseLine_channel2/F"); 
-    nt->Branch("baseLineError_channel2",&baseLineError_channel2,"baseLineError_channel2/F"); 
+    nt->Branch("baselineDispersion_channel2",&baselineDispersion_channel2,"baselineDispersion_channel2/F"); 
+    nt->Branch("baseLineGlobal_channel2",&baseLineGlobal_channel2,"baseLineGlobal_channel2/F");  
+    nt->Branch("baselineDispersionGlobal_channel2",&baselineDispersionGlobal_channel2,"baselineDispersionGlobal_channel2/F"); 
     nt->Branch("ampMax_channel2",&ampMax_channel2,"ampMax_channel2/F"); 
     nt->Branch("timeAmpMax_channel2",&timeAmpMax_channel2,"timeAmpMax_channel2/F"); 
     nt->Branch("constFrac_channel2",&constFrac_channel2,"constFrac_channel2/F"); 
@@ -188,7 +214,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel2",&chi2ConstFrac_channel2,"chi2ConstFrac_channel2/F"); 
     nt->Branch("waveForm_channel3","std::vector<float>",&waveForm_channel3); 
     nt->Branch("baseLine_channel3",&baseLine_channel3,"baseLine_channel3/F"); 
-    nt->Branch("baseLineError_channel3",&baseLineError_channel3,"baseLineError_channel3/F"); 
+    nt->Branch("baselineDispersion_channel3",&baselineDispersion_channel3,"baselineDispersion_channel3/F"); 
+    nt->Branch("baseLineGlobal_channel3",&baseLineGlobal_channel3,"baseLineGlobal_channel3/F");  
+    nt->Branch("baselineDispersionGlobal_channel3",&baselineDispersionGlobal_channel3,"baselineDispersionGlobal_channel3/F"); 
     nt->Branch("ampMax_channel3",&ampMax_channel3,"ampMax_channel3/F"); 
     nt->Branch("timeAmpMax_channel3",&timeAmpMax_channel3,"timeAmpMax_channel3/F"); 
     nt->Branch("constFrac_channel3",&constFrac_channel3,"constFrac_channel3/F"); 
@@ -197,7 +225,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel3",&chi2ConstFrac_channel3,"chi2ConstFrac_channel3/F"); 
     nt->Branch("waveForm_channel4","std::vector<float>",&waveForm_channel4); 
     nt->Branch("baseLine_channel4",&baseLine_channel4,"baseLine_channel4/F"); 
-    nt->Branch("baseLineError_channel4",&baseLineError_channel4,"baseLineError_channel4/F"); 
+    nt->Branch("baselineDispersion_channel4",&baselineDispersion_channel4,"baselineDispersion_channel4/F"); 
+    nt->Branch("baseLineGlobal_channel4",&baseLineGlobal_channel4,"baseLineGlobal_channel4/F");  
+    nt->Branch("baselineDispersionGlobal_channel4",&baselineDispersionGlobal_channel4,"baselineDispersionGlobal_channel4/F"); 
     nt->Branch("ampMax_channel4",&ampMax_channel4,"ampMax_channel4/F"); 
     nt->Branch("timeAmpMax_channel4",&timeAmpMax_channel4,"timeAmpMax_channel4/F"); 
     nt->Branch("constFrac_channel4",&constFrac_channel4,"constFrac_channel4/F"); 
@@ -206,7 +236,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel4",&chi2ConstFrac_channel4,"chi2ConstFrac_channel4/F"); 
     nt->Branch("waveForm_channel5","std::vector<float>",&waveForm_channel5);
     nt->Branch("baseLine_channel5",&baseLine_channel5,"baseLine_channel5/F"); 
-    nt->Branch("baseLineError_channel5",&baseLineError_channel5,"baseLineError_channel5/F"); 
+    nt->Branch("baselineDispersion_channel5",&baselineDispersion_channel5,"baselineDispersion_channel5/F"); 
+    nt->Branch("baseLineGlobal_channel5",&baseLineGlobal_channel5,"baseLineGlobal_channel5/F");  
+    nt->Branch("baselineDispersionGlobal_channel5",&baselineDispersionGlobal_channel5,"baselineDispersionGlobal_channel5/F"); 
     nt->Branch("ampMax_channel5",&ampMax_channel5,"ampMax_channel5/F");  
     nt->Branch("timeAmpMax_channel5",&timeAmpMax_channel5,"timeAmpMax_channel5/F"); 
     nt->Branch("constFrac_channel5",&constFrac_channel5,"constFrac_channel5/F"); 
@@ -215,7 +247,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel5",&chi2ConstFrac_channel5,"chi2ConstFrac_channel5/F"); 
     nt->Branch("waveForm_channel6","std::vector<float>",&waveForm_channel6); 
     nt->Branch("baseLine_channel6",&baseLine_channel6,"baseLine_channel6/F"); 
-    nt->Branch("baseLineError_channel6",&baseLineError_channel6,"baseLineError_channel6/F"); 
+    nt->Branch("baselineDispersion_channel6",&baselineDispersion_channel6,"baselineDispersion_channel6/F"); 
+    nt->Branch("baseLineGlobal_channel6",&baseLineGlobal_channel6,"baseLineGlobal_channel6/F");  
+    nt->Branch("baselineDispersionGlobal_channel6",&baselineDispersionGlobal_channel6,"baselineDispersionGlobal_channel6/F"); 
     nt->Branch("ampMax_channel6",&ampMax_channel6,"ampMax_channel6/F"); 
     nt->Branch("timeAmpMax_channel6",&timeAmpMax_channel6,"timeAmpMax_channel6/F"); 
     nt->Branch("constFrac_channel6",&constFrac_channel6,"constFrac_channel6/F"); 
@@ -224,7 +258,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel6",&chi2ConstFrac_channel6,"chi2ConstFrac_channel6/F"); 
     nt->Branch("waveForm_channel7","std::vector<float>",&waveForm_channel7); 
     nt->Branch("baseLine_channel7",&baseLine_channel7,"baseLine_channel7/F"); 
-    nt->Branch("baseLineError_channel7",&baseLineError_channel7,"baseLineError_channel7/F"); 
+    nt->Branch("baselineDispersion_channel7",&baselineDispersion_channel7,"baselineDispersion_channel7/F"); 
+    nt->Branch("baseLineGlobal_channel7",&baseLineGlobal_channel7,"baseLineGlobal_channel7/F");  
+    nt->Branch("baselineDispersionGlobal_channel7",&baselineDispersionGlobal_channel7,"baselineDispersionGlobal_channel7/F"); 
     nt->Branch("ampMax_channel7",&ampMax_channel7,"ampMax_channel7/F"); 
     nt->Branch("timeAmpMax_channel7",&timeAmpMax_channel7,"timeAmpMax_channel7/F"); 
     nt->Branch("constFrac_channel7",&constFrac_channel7,"constFrac_channel7/F"); 
@@ -233,7 +269,9 @@ int main(int argc, char** argv)
     nt->Branch("chi2ConstFrac_channel7",&chi2ConstFrac_channel7,"chi2ConstFrac_channel7/F"); 
     nt->Branch("waveForm_channel8","std::vector<float>",&waveForm_channel8);
     nt->Branch("baseLine_channel8",&baseLine_channel8,"baseLine_channel8/F"); 
-    nt->Branch("baseLineError_channel8",&baseLineError_channel8,"baseLineError_channel8/F"); 
+    nt->Branch("baselineDispersion_channel8",&baselineDispersion_channel8,"baselineDispersion_channel8/F"); 
+    nt->Branch("baseLineGlobal_channel8",&baseLineGlobal_channel8,"baseLineGlobal_channel8/F");  
+    nt->Branch("baselineDispersionGlobal_channel8",&baselineDispersionGlobal_channel8,"baselineDispersionGlobal_channel8/F"); 
     nt->Branch("ampMax_channel8",&ampMax_channel8,"ampMax_channel8/F"); 
     nt->Branch("timeAmpMax_channel8",&timeAmpMax_channel8,"timeAmpMax_channel8/F"); 
     nt->Branch("constFrac_channel8",&constFrac_channel8,"constFrac_channel8/F"); 
@@ -266,6 +304,9 @@ int main(int argc, char** argv)
     std::vector<float> tmp, tmp_WF;
     std::vector<float> tmp_baseline;
     std::map<float,int> map_AmpTm;
+
+    std::map<int,std::vector<float> > baseline_global;
+    float baselineMean_global[9], baselineDispersion_global[9];
 
     std::map<int,std::map<int,TH1F*> > h_WF_Trigger;
     std::map<int,std::map<int,TH1F*> > h_WF_channel1; 
@@ -388,7 +429,8 @@ int main(int argc, char** argv)
             }
 
             float baseline = computeMean(tmp_baseline);
-            float baseline_error = computeError(tmp_baseline);
+            
+            baseline_global[iCh].push_back(baseline);
 
             std::sort(tmp.begin(),tmp.end());
             
@@ -417,10 +459,18 @@ int main(int argc, char** argv)
 		    ref = iSample;
                     if(absAmp <= absFrac) break;
                 }
-                if(fabs(tmp_WF.at(tmpTime)-baseline) > 200.){
-                   TimeConstFraction timeCF(ref,tmpTime,tmp_WF,fraction,baseline,nPointsInterpolation,BinToTime);
-                   h_Slope[iCh][ii]->Fill(timeCF.getSlope());
-                   h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
+                if(iCh != 3){
+                   if(fabs(tmp_WF.at(tmpTime)-baseline) > thresAmp){
+                      TimeConstFraction timeCF(ref,tmpTime,tmp_WF,fraction,baseline,nPointsInterpolation,BinToTime);
+                      h_Slope[iCh][ii]->Fill(timeCF.getSlope());
+                      h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
+                   }
+                }else{
+                   if(fabs(tmp_WF.at(tmpTime)-baseline) > thresAmpCh3){
+                      TimeConstFraction timeCF(ref,tmpTime,tmp_WF,fraction,baseline,nPointsInterpolation,BinToTime);
+                      h_Slope[iCh][ii]->Fill(timeCF.getSlope());
+                      h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
+                   }
                 }
             }
 
@@ -457,6 +507,9 @@ int main(int argc, char** argv)
           gr_slope[iCh]->Fit(func,"","",0.2,0.9);
           
           fitted_fraction.push_back(-1*func->GetParameter(1)/(2*func->GetParameter(2)));
+
+          baselineMean_global[iCh] = computeMean(baseline_global[iCh]);
+          baselineDispersion_global[iCh] = computeDispersion(baseline_global[iCh]);
           
           vec_slope.clear();
           vec_slope_error.clear();
@@ -559,15 +612,35 @@ int main(int argc, char** argv)
         baseLine_channel7 = 0.;
         baseLine_channel8 = 0.;
 
-        baseLineError_Trigger = 0.;
-        baseLineError_channel1 = 0.;
-        baseLineError_channel2 = 0.;
-        baseLineError_channel3 = 0.;
-        baseLineError_channel4 = 0.;
-        baseLineError_channel5 = 0.;
-        baseLineError_channel6 = 0.;
-        baseLineError_channel7 = 0.;
-        baseLineError_channel8 = 0.;
+        baselineDispersion_Trigger = 0.;
+        baselineDispersion_channel1 = 0.;
+        baselineDispersion_channel2 = 0.;
+        baselineDispersion_channel3 = 0.;
+        baselineDispersion_channel4 = 0.;
+        baselineDispersion_channel5 = 0.;
+        baselineDispersion_channel6 = 0.;
+        baselineDispersion_channel7 = 0.;
+        baselineDispersion_channel8 = 0.;
+
+        baseLineGlobal_Trigger = 0.;
+        baseLineGlobal_channel1 = 0.;
+        baseLineGlobal_channel2 = 0.;
+        baseLineGlobal_channel3 = 0.;
+        baseLineGlobal_channel4 = 0.;
+        baseLineGlobal_channel5 = 0.;
+        baseLineGlobal_channel6 = 0.;
+        baseLineGlobal_channel7 = 0.;
+        baseLineGlobal_channel8 = 0.;
+
+        baselineDispersionGlobal_Trigger = 0.;
+        baselineDispersionGlobal_channel1 = 0.;
+        baselineDispersionGlobal_channel2 = 0.;
+        baselineDispersionGlobal_channel3 = 0.;
+        baselineDispersionGlobal_channel4 = 0.;
+        baselineDispersionGlobal_channel5 = 0.;
+        baselineDispersionGlobal_channel6 = 0.;
+        baselineDispersionGlobal_channel7 = 0.;
+        baselineDispersionGlobal_channel8 = 0.;
 
         ampMax_Trigger = 0.;
         ampMax_channel1 = 0.;
@@ -641,7 +714,7 @@ int main(int argc, char** argv)
             }
             
             float baseline = computeMean(tmp_baseline);
-            float baseline_error = computeError(tmp_baseline);
+            float baseline_dispersion = computeDispersion(tmp_baseline);
 
             std::sort(tmp.begin(),tmp.end());
             
@@ -684,7 +757,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_Trigger.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_Trigger = baseline;
-               baseLineError_Trigger = baseline_error;
+               baselineDispersion_Trigger = baseline_dispersion;
+               baseLineGlobal_Trigger = baselineMean_global[iCh];
+               baselineDispersionGlobal_Trigger = baselineDispersion_global[iCh];
                ampMax_Trigger = fabs(tmpAmp-baseline);
                timeAmpMax_Trigger = BinToTime*tmpTime;   
                constFrac_Trigger = tmpFrac;     
@@ -708,7 +783,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel1.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel1 = baseline;
-               baseLineError_channel1 = baseline_error;
+               baselineDispersion_channel1 = baseline_dispersion;
+               baseLineGlobal_channel1 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel1 = baselineDispersion_global[iCh];
                ampMax_channel1 = fabs(tmpAmp-baseline);
                timeAmpMax_channel1 = BinToTime*tmpTime; 
                constFrac_channel1 = tmpFrac;     
@@ -733,7 +810,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel2.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel2 = baseline;
-               baseLineError_channel2 = baseline_error;
+               baselineDispersion_channel2 = baseline_dispersion;
+               baseLineGlobal_channel2 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel2 = baselineDispersion_global[iCh];
                ampMax_channel2 = fabs(tmpAmp-baseline);
                timeAmpMax_channel2 = BinToTime*tmpTime;  
                constFrac_channel2 = tmpFrac;     
@@ -758,7 +837,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel3.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel3 = baseline;
-               baseLineError_channel3 = baseline_error;
+               baselineDispersion_channel3 = baseline_dispersion;
+               baseLineGlobal_channel3 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel3 = baselineDispersion_global[iCh];
                ampMax_channel3 = fabs(tmpAmp-baseline);
                timeAmpMax_channel3 = BinToTime*tmpTime;  
                constFrac_channel3 = tmpFrac;     
@@ -783,7 +864,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel4.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel4 = baseline;
-               baseLineError_channel4 = baseline_error;
+               baselineDispersion_channel4 = baseline_dispersion;
+               baseLineGlobal_channel4 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel4 = baselineDispersion_global[iCh];
                ampMax_channel4 = fabs(tmpAmp-baseline);
                timeAmpMax_channel4 = BinToTime*tmpTime;
                constFrac_channel4 = tmpFrac;     
@@ -808,7 +891,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel5.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel5 = baseline;
-               baseLineError_channel5 = baseline_error;
+               baselineDispersion_channel5 = baseline_dispersion;
+               baseLineGlobal_channel5 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel5 = baselineDispersion_global[iCh];
                ampMax_channel5 = fabs(tmpAmp-baseline);
                timeAmpMax_channel5 = BinToTime*tmpTime;  
                constFrac_channel1 = tmpFrac;     
@@ -833,7 +918,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel6.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel6 = baseline;
-               baseLineError_channel6 = baseline_error;
+               baselineDispersion_channel6 = baseline_dispersion;
+               baseLineGlobal_channel6 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel6 = baselineDispersion_global[iCh];
                ampMax_channel6 = fabs(tmpAmp-baseline);
                timeAmpMax_channel6 = BinToTime*tmpTime;   
                constFrac_channel6 = tmpFrac;     
@@ -858,7 +945,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel7.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel7 = baseline;
-               baseLineError_channel7 = baseline_error;
+               baselineDispersion_channel7 = baseline_dispersion;
+               baseLineGlobal_channel7 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel7 = baselineDispersion_global[iCh];
                ampMax_channel7 = fabs(tmpAmp-baseline);
                timeAmpMax_channel7 = BinToTime*tmpTime;
                constFrac_channel7 = tmpFrac;     
@@ -883,7 +972,9 @@ int main(int argc, char** argv)
                    if(saveWF == 1) waveForm_channel8.push_back(channels[iCh].at(iSample+nSize*i));
 
                baseLine_channel8 = baseline;
-               baseLineError_channel8 = baseline_error;
+               baselineDispersion_channel8 = baseline_dispersion;
+               baseLineGlobal_channel8 = baselineMean_global[iCh];
+               baselineDispersionGlobal_channel8 = baselineDispersion_global[iCh];
                ampMax_channel8 = fabs(tmpAmp-baseline);
                timeAmpMax_channel8 = BinToTime*tmpTime;  
                constFrac_channel8 = tmpFrac;     
@@ -1322,7 +1413,7 @@ float computeMean(std::vector<float> sample)
   return mean/sample.size();
 }
 
-float computeError(std::vector<float> sample)
+float computeDispersion(std::vector<float> sample)
 {
   float error = 0.; 
   float mean = computeMean(sample);
@@ -1330,5 +1421,6 @@ float computeError(std::vector<float> sample)
   for(unsigned int ii = 0; ii < sample.size(); ii++)
       error = error + (sample.at(ii)-mean)*(sample.at(ii)-mean);  
 
-  return sqrt(error/(sample.size()-1))/sqrt(sample.size()); 
+  //return sqrt(error/(sample.size()-1))/sqrt(sample.size()); 
+  return sqrt(error/(sample.size()-1)); 
 }
