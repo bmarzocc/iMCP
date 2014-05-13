@@ -66,6 +66,8 @@ int main(int argc, char** argv)
     TString command = "ls "+ std::string(runFolder) + "/*.bin > input.tmp"; 
     gSystem -> Exec(command); 
 
+    int nChannels = 0;
+
     // Tree branches and tree structure
     int event;
     int run;
@@ -382,6 +384,8 @@ int main(int argc, char** argv)
       nSize = BinHeader[0];
       nCh = BinHeader[1];
 
+      nChannels = nCh;
+
       int isNegative[9];
       isNegative[0] = -1;
       for(int ii = 1; ii < 9; ii++)
@@ -502,11 +506,6 @@ int main(int argc, char** argv)
               gr_chi2[iCh]->SetPoint(ii,ii/100.,vec_chi2.at(ii));
               gr_chi2[iCh]->SetPointError(ii,0,vec_chi2_error.at(ii));
           }
-          
-          TF1* func = new TF1("func","pol2",0.,1.);
-          gr_slope[iCh]->Fit(func,"","",0.2,0.9);
-          
-          fitted_fraction.push_back(-1*func->GetParameter(1)/(2*func->GetParameter(2)));
 
           baselineMean_global[iCh] = computeMean(baseline_global[iCh]);
           baselineDispersion_global[iCh] = computeDispersion(baseline_global[iCh]);
@@ -516,7 +515,17 @@ int main(int argc, char** argv)
           vec_chi2.clear();
           vec_chi2_error.clear();
     }
-    
+
+    for(int iCh=0; iCh<=nChannels; iCh++)
+    {
+     
+        TF1* func = new TF1("func","pol2",0.,1.);
+        gr_slope[iCh]->Fit(func,"","",0.2,0.9);
+          
+        fitted_fraction.push_back(-1*func->GetParameter(1)/(2*func->GetParameter(2)));
+
+    }
+
     vec_run.clear();
 
     ifile=0;
