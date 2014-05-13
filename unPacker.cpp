@@ -3,7 +3,7 @@
     simple program to read bin files
     compile with --->  c++ -o unPacker `root-config --cflags --glibs` unPacker.cpp
          or with --->  c++ -o unPacker unPacker.cpp `root-config --cflags --glibs`
-    run with --->  ./unPacker WaveForms 36 5 1 0 // usage: ./unPacker directory fraction baseline-time saveWaveForm saveWFHistos
+    run with --->  ./unPacker WaveForms 5 10 1 0 // usage: ./unPacker directory nPoints-interpolation baseline-time saveWaveForm saveWFHistos
     
 *************************************************************/
 
@@ -30,12 +30,15 @@
 #include "TStyle.h"
 #include "TTree.h"
 #include "TFile.h"
+#include "TGraphErrors.h"
+#include "TF1.h"
+
+#include "TimeConstFraction.h"
 
 using namespace std;
 
 const float BinToTime = 0.2;
 
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp);
 float computeMean(std::vector<float> sample);
 float computeError(std::vector<float> sample);
 
@@ -45,13 +48,13 @@ int main(int argc, char** argv)
     gROOT->ProcessLine("#include <vector>");
 
     char* runFolder = argv[1];
-    float ampFraction = atof(argv[2]);
+    int nPointsInterpolation = atoi(argv[2]);
     float timeBaseLine = atof(argv[3]);
     int saveWF = atoi(argv[4]);
     int saveWFHistos = atoi(argv[5]);
   
     std::cout << "runFolder    = " << runFolder << std::endl;
-    std::cout << "ampFraction  = " << ampFraction << "%" << std::endl;
+    std::cout << "nPointsInterpolation  = " << nPointsInterpolation << std::endl;
     std::cout << "timeBaseLine = " << timeBaseLine << std::endl;
     std::cout << "saveWF       = " << saveWF << std::endl;
     std::cout << "saveWFHistos = " << saveWFHistos << std::endl;
@@ -64,7 +67,7 @@ int main(int argc, char** argv)
     // Tree branches and tree structure
     int event;
     int run;
-    float ampFraction_output;
+    int nPointsInterpolation_output;
     float timeBaseLine_output;
 
     vector<float> waveForm_Trigger;
@@ -72,117 +75,171 @@ int main(int argc, char** argv)
     float baseLineError_Trigger;
     float ampMax_Trigger;
     float timeAmpMax_Trigger;
+    float constFrac_Trigger;
     float timeConstFrac_Trigger;
+    float slopeConstFrac_Trigger;
+    float chi2ConstFrac_Trigger;
     vector<float> waveForm_channel1;
     float baseLine_channel1;
     float baseLineError_channel1;
     float ampMax_channel1;
     float timeAmpMax_channel1;
+    float constFrac_channel1;
     float timeConstFrac_channel1;
+    float slopeConstFrac_channel1;
+    float chi2ConstFrac_channel1;
     vector<float> waveForm_channel2;
     float baseLine_channel2;
     float baseLineError_channel2;
     float ampMax_channel2;
     float timeAmpMax_channel2;
+    float constFrac_channel2;
     float timeConstFrac_channel2;
+    float slopeConstFrac_channel2;
+    float chi2ConstFrac_channel2;
     vector<float> waveForm_channel3;
     float baseLine_channel3;
     float baseLineError_channel3;
     float ampMax_channel3;
     float timeAmpMax_channel3;
+    float constFrac_channel3;
     float timeConstFrac_channel3;
+    float slopeConstFrac_channel3;
+    float chi2ConstFrac_channel3;
     vector<float> waveForm_channel4;
     float baseLine_channel4;
     float baseLineError_channel4;
     float ampMax_channel4;
     float timeAmpMax_channel4;
+    float constFrac_channel4;
     float timeConstFrac_channel4;
+    float slopeConstFrac_channel4;
+    float chi2ConstFrac_channel4;
     vector<float> waveForm_channel5;
     float baseLine_channel5;
     float baseLineError_channel5;
     float ampMax_channel5;
     float timeAmpMax_channel5;
+    float constFrac_channel5;
     float timeConstFrac_channel5;
+    float slopeConstFrac_channel5;
+    float chi2ConstFrac_channel5;
     vector<float> waveForm_channel6;
     float baseLine_channel6;
     float baseLineError_channel6;
     float ampMax_channel6;
     float timeAmpMax_channel6;
+    float constFrac_channel6;
     float timeConstFrac_channel6;
+    float slopeConstFrac_channel6;
+    float chi2ConstFrac_channel6;
     vector<float> waveForm_channel7;
     float baseLine_channel7;
     float baseLineError_channel7;
     float ampMax_channel7;
     float timeAmpMax_channel7;
+    float constFrac_channel7;
     float timeConstFrac_channel7;
+    float slopeConstFrac_channel7;
+    float chi2ConstFrac_channel7;
     vector<float> waveForm_channel8;
     float baseLine_channel8; 
     float baseLineError_channel8;
     float ampMax_channel8;
     float timeAmpMax_channel8;
+    float constFrac_channel8;
     float timeConstFrac_channel8;
+    float slopeConstFrac_channel8;
+    float chi2ConstFrac_channel8;
 
     TTree *nt = new TTree("nt","nt");
     nt->SetDirectory(0);
 
     nt->Branch("event",&event,"event/I"); 
     nt->Branch("run",&run,"run/I"); 
-    nt->Branch("ampFraction",&ampFraction_output,"ampFraction/F"); 
+    nt->Branch("nPointsInterpolation",&nPointsInterpolation,"nPointsInterpolation/I"); 
     nt->Branch("timeBaseLine",&timeBaseLine_output,"timeBaseLine/F"); 
     nt->Branch("waveForm_Trigger","std::vector<float>",&waveForm_Trigger); 
     nt->Branch("baseLine_Trigger",&baseLine_Trigger,"baseLine_Trigger/F");  
     nt->Branch("baseLineError_Trigger",&baseLineError_Trigger,"baseLineError_Trigger/F"); 
     nt->Branch("ampMax_Trigger",&ampMax_Trigger,"ampMax_Trigger/F"); 
     nt->Branch("timeAmpMax_Trigger",&timeAmpMax_Trigger,"timeAmpMax_Trigger/F"); 
+    nt->Branch("constFrac_Trigger",&constFrac_Trigger,"constFrac_Trigger/F"); 
     nt->Branch("timeConstFrac_Trigger",&timeConstFrac_Trigger,"timeConstFrac_Trigger/F"); 
+    nt->Branch("slopeConstFrac_Trigger",&slopeConstFrac_Trigger,"slopeConstFrac_Trigger/F"); 
+    nt->Branch("chi2ConstFrac_Trigger",&chi2ConstFrac_Trigger,"chi2ConstFrac_Trigger/F"); 
     nt->Branch("waveForm_channel1","std::vector<float>",&waveForm_channel1);  
     nt->Branch("baseLine_channel1",&baseLine_channel1,"baseLine_channel1/F"); 
     nt->Branch("baseLineError_channel1",&baseLineError_channel1,"baseLineError_channel1/F"); 
     nt->Branch("ampMax_channel1",&ampMax_channel1,"ampMax_channel1/F"); 
     nt->Branch("timeAmpMax_channel1",&timeAmpMax_channel1,"timeAmpMax_channel1/F"); 
+    nt->Branch("constFrac_channel1",&constFrac_channel1,"constFrac_channel1/F"); 
     nt->Branch("timeConstFrac_channel1",&timeConstFrac_channel1,"timeConstFrac_channel1/F"); 
+    nt->Branch("slopeConstFrac_channel1",&slopeConstFrac_channel1,"slopeConstFrac_channel1/F"); 
+    nt->Branch("chi2ConstFrac_channel1",&chi2ConstFrac_channel1,"chi2ConstFrac_channel1/F"); 
     nt->Branch("waveForm_channel2","std::vector<float>",&waveForm_channel2); 
     nt->Branch("baseLine_channel2",&baseLine_channel2,"baseLine_channel2/F"); 
     nt->Branch("baseLineError_channel2",&baseLineError_channel2,"baseLineError_channel2/F"); 
     nt->Branch("ampMax_channel2",&ampMax_channel2,"ampMax_channel2/F"); 
     nt->Branch("timeAmpMax_channel2",&timeAmpMax_channel2,"timeAmpMax_channel2/F"); 
-    nt->Branch("timeConstFrac_channel2",&timeConstFrac_channel2,"timeConstFrac_channel2/F");
+    nt->Branch("constFrac_channel2",&constFrac_channel2,"constFrac_channel2/F"); 
+    nt->Branch("timeConstFrac_channel2",&timeConstFrac_channel2,"timeConstFrac_channel2/F"); 
+    nt->Branch("slopeConstFrac_channel2",&slopeConstFrac_channel2,"slopeConstFrac_channel2/F"); 
+    nt->Branch("chi2ConstFrac_channel2",&chi2ConstFrac_channel2,"chi2ConstFrac_channel2/F"); 
     nt->Branch("waveForm_channel3","std::vector<float>",&waveForm_channel3); 
     nt->Branch("baseLine_channel3",&baseLine_channel3,"baseLine_channel3/F"); 
     nt->Branch("baseLineError_channel3",&baseLineError_channel3,"baseLineError_channel3/F"); 
     nt->Branch("ampMax_channel3",&ampMax_channel3,"ampMax_channel3/F"); 
     nt->Branch("timeAmpMax_channel3",&timeAmpMax_channel3,"timeAmpMax_channel3/F"); 
-    nt->Branch("timeConstFrac_channel3",&timeConstFrac_channel3,"timeConstFrac_channel3/F");
+    nt->Branch("constFrac_channel3",&constFrac_channel3,"constFrac_channel3/F"); 
+    nt->Branch("timeConstFrac_channel3",&timeConstFrac_channel3,"timeConstFrac_channel3/F"); 
+    nt->Branch("slopeConstFrac_channel3",&slopeConstFrac_channel3,"slopeConstFrac_channel3/F"); 
+    nt->Branch("chi2ConstFrac_channel3",&chi2ConstFrac_channel3,"chi2ConstFrac_channel3/F"); 
     nt->Branch("waveForm_channel4","std::vector<float>",&waveForm_channel4); 
     nt->Branch("baseLine_channel4",&baseLine_channel4,"baseLine_channel4/F"); 
     nt->Branch("baseLineError_channel4",&baseLineError_channel4,"baseLineError_channel4/F"); 
     nt->Branch("ampMax_channel4",&ampMax_channel4,"ampMax_channel4/F"); 
     nt->Branch("timeAmpMax_channel4",&timeAmpMax_channel4,"timeAmpMax_channel4/F"); 
-    nt->Branch("timeConstFrac_channel4",&timeConstFrac_channel4,"timeConstFrac_channel4/F");
+    nt->Branch("constFrac_channel4",&constFrac_channel4,"constFrac_channel4/F"); 
+    nt->Branch("timeConstFrac_channel4",&timeConstFrac_channel4,"timeConstFrac_channel4/F"); 
+    nt->Branch("slopeConstFrac_channel4",&slopeConstFrac_channel4,"slopeConstFrac_channel4/F"); 
+    nt->Branch("chi2ConstFrac_channel4",&chi2ConstFrac_channel4,"chi2ConstFrac_channel4/F"); 
     nt->Branch("waveForm_channel5","std::vector<float>",&waveForm_channel5);
     nt->Branch("baseLine_channel5",&baseLine_channel5,"baseLine_channel5/F"); 
     nt->Branch("baseLineError_channel5",&baseLineError_channel5,"baseLineError_channel5/F"); 
     nt->Branch("ampMax_channel5",&ampMax_channel5,"ampMax_channel5/F");  
     nt->Branch("timeAmpMax_channel5",&timeAmpMax_channel5,"timeAmpMax_channel5/F"); 
-    nt->Branch("timeConstFrac_channel5",&timeConstFrac_channel5,"timeConstFrac_channel5/F");
+    nt->Branch("constFrac_channel5",&constFrac_channel5,"constFrac_channel5/F"); 
+    nt->Branch("timeConstFrac_channel5",&timeConstFrac_channel5,"timeConstFrac_channel5/F"); 
+    nt->Branch("slopeConstFrac_channel5",&slopeConstFrac_channel5,"slopeConstFrac_channel5/F"); 
+    nt->Branch("chi2ConstFrac_channel5",&chi2ConstFrac_channel5,"chi2ConstFrac_channel5/F"); 
     nt->Branch("waveForm_channel6","std::vector<float>",&waveForm_channel6); 
     nt->Branch("baseLine_channel6",&baseLine_channel6,"baseLine_channel6/F"); 
     nt->Branch("baseLineError_channel6",&baseLineError_channel6,"baseLineError_channel6/F"); 
     nt->Branch("ampMax_channel6",&ampMax_channel6,"ampMax_channel6/F"); 
     nt->Branch("timeAmpMax_channel6",&timeAmpMax_channel6,"timeAmpMax_channel6/F"); 
-    nt->Branch("timeConstFrac_channel6",&timeConstFrac_channel6,"timeConstFrac_channel6/F");
+    nt->Branch("constFrac_channel6",&constFrac_channel6,"constFrac_channel6/F"); 
+    nt->Branch("timeConstFrac_channel6",&timeConstFrac_channel6,"timeConstFrac_channel6/F"); 
+    nt->Branch("slopeConstFrac_channel6",&slopeConstFrac_channel6,"slopeConstFrac_channel6/F"); 
+    nt->Branch("chi2ConstFrac_channel6",&chi2ConstFrac_channel6,"chi2ConstFrac_channel6/F"); 
     nt->Branch("waveForm_channel7","std::vector<float>",&waveForm_channel7); 
     nt->Branch("baseLine_channel7",&baseLine_channel7,"baseLine_channel7/F"); 
     nt->Branch("baseLineError_channel7",&baseLineError_channel7,"baseLineError_channel7/F"); 
     nt->Branch("ampMax_channel7",&ampMax_channel7,"ampMax_channel7/F"); 
     nt->Branch("timeAmpMax_channel7",&timeAmpMax_channel7,"timeAmpMax_channel7/F"); 
-    nt->Branch("timeConstFrac_channel7",&timeConstFrac_channel7,"timeConstFrac_channel7/F");
+    nt->Branch("constFrac_channel7",&constFrac_channel7,"constFrac_channel7/F"); 
+    nt->Branch("timeConstFrac_channel7",&timeConstFrac_channel7,"timeConstFrac_channel7/F"); 
+    nt->Branch("slopeConstFrac_channel7",&slopeConstFrac_channel7,"slopeConstFrac_channel7/F"); 
+    nt->Branch("chi2ConstFrac_channel7",&chi2ConstFrac_channel7,"chi2ConstFrac_channel7/F"); 
     nt->Branch("waveForm_channel8","std::vector<float>",&waveForm_channel8);
     nt->Branch("baseLine_channel8",&baseLine_channel8,"baseLine_channel8/F"); 
     nt->Branch("baseLineError_channel8",&baseLineError_channel8,"baseLineError_channel8/F"); 
     nt->Branch("ampMax_channel8",&ampMax_channel8,"ampMax_channel8/F"); 
     nt->Branch("timeAmpMax_channel8",&timeAmpMax_channel8,"timeAmpMax_channel8/F"); 
-    nt->Branch("timeConstFrac_channel8",&timeConstFrac_channel8,"timeConstFrac_channel8/F");
+    nt->Branch("constFrac_channel8",&constFrac_channel8,"constFrac_channel8/F"); 
+    nt->Branch("timeConstFrac_channel8",&timeConstFrac_channel8,"timeConstFrac_channel8/F"); 
+    nt->Branch("slopeConstFrac_channel8",&slopeConstFrac_channel8,"slopeConstFrac_channel8/F"); 
+    nt->Branch("chi2ConstFrac_channel8",&chi2ConstFrac_channel8,"chi2ConstFrac_channel8/F"); 
     
     waveForm_Trigger.clear();
     waveForm_channel1.clear();
@@ -201,7 +258,12 @@ int main(int argc, char** argv)
     int ifile=0;
 
     std::vector<int> vec_run;
-    std::vector<float> tmp;
+    std::vector<float> vec_slope;
+    std::vector<float> vec_slope_error;
+    std::vector<float> vec_chi2;
+    std::vector<float> vec_chi2_error;
+    std::vector<float> fitted_fraction;
+    std::vector<float> tmp, tmp_WF;
     std::vector<float> tmp_baseline;
     std::map<float,int> map_AmpTm;
 
@@ -215,12 +277,205 @@ int main(int argc, char** argv)
     std::map<int,std::map<int,TH1F*> > h_WF_channel7;
     std::map<int,std::map<int,TH1F*> > h_WF_channel8;
 
+    char histoName[200];
+
+    std::map<int,std::map<int,TH1F*> > h_Slope;
+    for(int jj = 0; jj < 9; jj++)
+        for(int ii = 0; ii <= 100; ii++){
+            sprintf(histoName, "h_Slope_%d_%d",jj,ii);  
+            h_Slope[jj][ii] = new TH1F(histoName,histoName,400000,-2000.,2000.);
+        }
+
+    std::map<int,std::map<int,TH1F*> > h_Chi2;
+    for(int jj = 0; jj < 9; jj++)
+        for(int ii = 0; ii <= 100; ii++){
+            sprintf(histoName, "h_Chi2_%d_%d",jj,ii);  
+            h_Chi2[jj][ii] = new TH1F(histoName,histoName,200000,0.,2000.);
+        }
+
+    std::map<int,TGraphErrors*> gr_slope;
+    for(int jj = 0; jj < 9; jj++)
+        gr_slope[jj] = new TGraphErrors();
+
+    std::map<int,TGraphErrors*> gr_chi2;
+    for(int jj = 0; jj < 9; jj++)
+        gr_chi2[jj] = new TGraphErrors();
+
     while(getline(inFile,line)){
 
       ifile++;
-      std::cout << "Reading File: " << ifile << " - " << line << std::endl;
+      std::cout << "Reading File: " << ifile << " - " << line << " for computing best fraction..." <<std::endl;
 
-      ampFraction_output = ampFraction;
+      // get run number
+      char split_char = '/';
+      std::vector<std::string> tokens;
+      std::istringstream split(line);
+      for(std::string each; getline(split, each, split_char); tokens.push_back(each));
+
+      int icut_run = -1;
+      for(unsigned int ii = 0; ii < tokens.size(); ii++)
+        if(tokens.at(ii).find("run") != std::string::npos) icut_run = ii;
+
+      split_char = '_';
+      std::vector<std::string> tokens_run;
+      std::istringstream split_run(tokens.at(icut_run));
+      for(std::string each; getline(split_run, each, split_char); tokens_run.push_back(each));
+    
+      run = ::atoi(tokens_run.at(1).c_str());
+      vec_run.push_back(run);
+
+      //read data
+      FILE* input;
+      vector<float> channels[9];
+      vector<int> eventNumber;
+      int *BinHeader, nCh=0, nSize=0, iEvent=0, nEvent=0;
+
+      if((input = fopen(line.c_str(),"rb")) == NULL)
+      {
+        cout << "input file not found" << endl;
+        return -1;
+      }   
+
+      BinHeader = (int*) malloc (sizeof(int)*10);
+      fread(BinHeader, sizeof(int), 10, input);
+      nSize = BinHeader[0];
+      nCh = BinHeader[1];
+
+      int isNegative[9];
+      isNegative[0] = -1;
+      for(int ii = 1; ii < 9; ii++)
+          isNegative[ii] = BinHeader[ii+1];
+
+
+      //for(int ii = 0; ii < 10; ii++)
+      //std::cout << "BinHeader[" << ii << "] = " << BinHeader[ii] << std::endl;
+
+      fread(&iEvent, sizeof(int),1,input);
+      
+      float* buffer = (float*) malloc (sizeof(float)*nSize*(nCh+1));
+    
+      while (fread(buffer, sizeof(float), nSize*(nCh+1), input) == nSize*(nCh+1))
+      {
+        eventNumber.push_back(iEvent);
+        for(int iCh=0; iCh<=nCh; iCh++)
+        {
+            for(int iSample=0; iSample<nSize; iSample++)
+            {
+                int pos = iCh*nSize + iSample;
+                channels[iCh].push_back(buffer[pos]);
+            }
+        }
+        nEvent++;
+        fread(&iEvent, sizeof(int), 1, input);
+      }
+    
+      for(int i=0; i<nEvent; i++)
+      {
+
+        event = eventNumber.at(i);
+
+        if(event%100==0) cout << "--- Reading entry = " << event << endl;
+
+        for(int iCh=0; iCh<=nCh; iCh++)
+        {   
+            for(int iSample=0; iSample<nSize; iSample++){
+
+                if(iSample <= binBaseLine) tmp_baseline.push_back(channels[iCh].at(iSample+nSize*i));
+
+                tmp.push_back(channels[iCh].at(iSample+nSize*i));
+                tmp_WF.push_back(channels[iCh].at(iSample+nSize*i));
+                map_AmpTm[channels[iCh].at(iSample+nSize*i)] = iSample;
+            }
+
+            float baseline = computeMean(tmp_baseline);
+            float baseline_error = computeError(tmp_baseline);
+
+            std::sort(tmp.begin(),tmp.end());
+            
+            float tmpAmp = 0.;
+            int tmpTime = 0;
+            float tmpTimeConstFrac = 0.;
+
+            //std::cout << "isNegative[" << iCh << "] = " << isNegative[iCh] << std::endl;
+            if(isNegative[iCh] == -1){
+               tmpAmp = tmp.at(0);
+               tmpTime = map_AmpTm[tmp.at(0)];
+            }else{
+               tmpAmp = tmp.at(tmp.size()-1);
+               tmpTime = map_AmpTm[tmp.at(tmp.size()-1)];
+            }
+            
+            for(int ii = 0; ii <= 100; ii++){
+
+                int ref = 0;
+                float fraction = ii/100.;
+                
+	        for(int iSample = tmpTime; iSample >= 0; --iSample)
+                {
+                    float absAmp = fabs(channels[iCh].at(iSample+nSize*i)-baseline);
+                    float absFrac = fabs(tmpAmp-baseline)*fraction;
+		    ref = iSample;
+                    if(absAmp <= absFrac) break;
+                }
+                if(fabs(tmp_WF.at(tmpTime)-baseline) > 200.){
+                   TimeConstFraction timeCF(ref,tmpTime,tmp_WF,fraction,baseline,nPointsInterpolation,BinToTime);
+                   h_Slope[iCh][ii]->Fill(timeCF.getSlope());
+                   h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
+                }
+            }
+
+            tmp.clear();
+            tmp_WF.clear();
+            tmp_baseline.clear();
+        }
+      }
+    }
+
+    for(int iCh=0; iCh<=8; iCh++)
+    {       
+          for(unsigned int ii = 0; ii < h_Slope[iCh].size(); ii++){
+              vec_slope.push_back(h_Slope[iCh][ii]->GetMean());
+              vec_slope_error.push_back(h_Slope[iCh][ii]->GetRMS()/sqrt(h_Slope[iCh][ii]->GetEntries()));
+          } 
+
+          for(unsigned int ii = 0; ii < h_Chi2[iCh].size(); ii++){
+              vec_chi2.push_back(h_Chi2[iCh][ii]->GetMean());
+              vec_chi2_error.push_back(h_Chi2[iCh][ii]->GetRMS()/sqrt(h_Chi2[iCh][ii]->GetEntries()));
+          }    
+
+          for(unsigned int ii = 0; ii < vec_slope.size(); ii++){
+              gr_slope[iCh]->SetPoint(ii,ii/100.,vec_slope.at(ii));
+              gr_slope[iCh]->SetPointError(ii,0,vec_slope_error.at(ii));
+          }
+
+          for(unsigned int ii = 0; ii < vec_slope.size(); ii++){
+              gr_chi2[iCh]->SetPoint(ii,ii/100.,vec_chi2.at(ii));
+              gr_chi2[iCh]->SetPointError(ii,0,vec_chi2_error.at(ii));
+          }
+          
+          TF1* func = new TF1("func","pol2",0.,1.);
+          gr_slope[iCh]->Fit(func,"","",0.2,0.9);
+          
+          fitted_fraction.push_back(-1*func->GetParameter(1)/(2*func->GetParameter(2)));
+          
+          vec_slope.clear();
+          vec_slope_error.clear();
+          vec_chi2.clear();
+          vec_chi2_error.clear();
+    }
+    
+    vec_run.clear();
+
+    ifile=0;
+    line = "";
+    ifstream inFile_fill("input.tmp");
+    
+    while(getline(inFile_fill,line)){
+
+      ifile++;
+      std::cout << "Reading File: " << ifile << " - " << line << " for filling the ntuple..." <<std::endl;
+
+      nPointsInterpolation_output = nPointsInterpolation;
       timeBaseLine_output = timeBaseLine;
 
       // get run number
@@ -285,7 +540,7 @@ int main(int argc, char** argv)
         nEvent++;
         fread(&iEvent, sizeof(int), 1, input);
       }
-
+    
       //Fill tree
       for(int i=0; i<nEvent; i++)
       {
@@ -334,6 +589,16 @@ int main(int argc, char** argv)
         timeAmpMax_channel7 = 0.;
         timeAmpMax_channel8 = 0.;
 
+        constFrac_Trigger = 0.;          
+        constFrac_channel1 = 0.;
+        constFrac_channel2 = 0.;
+        constFrac_channel3 = 0.;
+        constFrac_channel4 = 0.;
+        constFrac_channel5 = 0.;
+        constFrac_channel6 = 0.;
+        constFrac_channel7 = 0.;
+        constFrac_channel8 = 0.;
+
         timeConstFrac_Trigger = 0.;          
         timeConstFrac_channel1 = 0.;
         timeConstFrac_channel2 = 0.;
@@ -344,6 +609,26 @@ int main(int argc, char** argv)
         timeConstFrac_channel7 = 0.;
         timeConstFrac_channel8 = 0.;
 
+        slopeConstFrac_Trigger = 0.;          
+        slopeConstFrac_channel1 = 0.;
+        slopeConstFrac_channel2 = 0.;
+        slopeConstFrac_channel3 = 0.;
+        slopeConstFrac_channel4 = 0.;
+        slopeConstFrac_channel5 = 0.;
+        slopeConstFrac_channel6 = 0.;
+        slopeConstFrac_channel7 = 0.;
+        slopeConstFrac_channel8 = 0.;
+
+        chi2ConstFrac_Trigger = 0.;          
+        chi2ConstFrac_channel1 = 0.;
+        chi2ConstFrac_channel2 = 0.;
+        chi2ConstFrac_channel3 = 0.;
+        chi2ConstFrac_channel4 = 0.;
+        chi2ConstFrac_channel5 = 0.;
+        chi2ConstFrac_channel6 = 0.;
+        chi2ConstFrac_channel7 = 0.;
+        chi2ConstFrac_channel8 = 0.;
+
         for(int iCh=0; iCh<=nCh; iCh++)
         {   
             for(int iSample=0; iSample<nSize; iSample++){
@@ -351,9 +636,10 @@ int main(int argc, char** argv)
                 if(iSample <= binBaseLine) tmp_baseline.push_back(channels[iCh].at(iSample+nSize*i));
 
                 tmp.push_back(channels[iCh].at(iSample+nSize*i));
+                tmp_WF.push_back(channels[iCh].at(iSample+nSize*i));
                 map_AmpTm[channels[iCh].at(iSample+nSize*i)] = iSample;
             }
-
+            
             float baseline = computeMean(tmp_baseline);
             float baseline_error = computeError(tmp_baseline);
 
@@ -361,8 +647,11 @@ int main(int argc, char** argv)
             
             float tmpAmp = 0.;
             int tmpTime = 0;
+            float tmpFrac = 0.;
             float tmpTimeConstFrac = 0.;
-
+            float tmpSlopeConstFrac = 0.;
+            float tmpChi2ConstFrac = 0.;
+            
             //std::cout << "isNegative[" << iCh << "] = " << isNegative[iCh] << std::endl;
             if(isNegative[iCh] == -1){
                tmpAmp = tmp.at(0);
@@ -370,25 +659,25 @@ int main(int argc, char** argv)
             }else{
                tmpAmp = tmp.at(tmp.size()-1);
                tmpTime = map_AmpTm[tmp.at(tmp.size()-1)];
-            }
+            }   
+             
 
             int ref = 0;
+              
 	    for(int iSample = tmpTime; iSample >= 0; --iSample)
             {
                 float absAmp = fabs(channels[iCh].at(iSample+nSize*i)-baseline);
-                float absFrac = fabs(tmpAmp-baseline)*ampFraction/100.;
-		if(absAmp < absFrac) break;
+                float absFrac = fabs(tmpAmp-baseline)*fitted_fraction.at(iCh);
 		ref = iSample;
+                if(absAmp <= absFrac) break;
             }
-
-            float x1 = (ref-1)*BinToTime; float y1 = channels[iCh].at((ref-1)+nSize*i)-baseline;
-            float x2 = ref*BinToTime;     float y2 = channels[iCh].at(ref+nSize*i)-baseline;
-            float x3 = (ref+1)*BinToTime; float y3 = channels[iCh].at((ref+1)+nSize*i)-baseline;
+           
+            TimeConstFraction timeCF(ref,tmpTime,tmp_WF,fitted_fraction.at(iCh),baseline,nPointsInterpolation,BinToTime);
+            tmpFrac = fitted_fraction.at(iCh);
+            tmpTimeConstFrac = timeCF.getTime();
+            tmpSlopeConstFrac = timeCF.getSlope();
+            tmpChi2ConstFrac = timeCF.getChi2();
             
-	    tmpTimeConstFrac = findTimeConstFrac(x1,y1,x2,y2,x3,y3,ampFraction,tmpAmp-baseline);
-
-            char histoName[200];
-
             if(iCh == 0)
             {
                for(int iSample=0; iSample<nSize; iSample++)
@@ -398,8 +687,11 @@ int main(int argc, char** argv)
                baseLineError_Trigger = baseline_error;
                ampMax_Trigger = fabs(tmpAmp-baseline);
                timeAmpMax_Trigger = BinToTime*tmpTime;   
-               timeConstFrac_Trigger = tmpTimeConstFrac;     
-               
+               constFrac_Trigger = tmpFrac;     
+               timeConstFrac_Trigger = tmpTimeConstFrac;  
+               slopeConstFrac_Trigger = tmpSlopeConstFrac;     
+               chi2ConstFrac_Trigger = tmpChi2ConstFrac;    
+                
                if(saveWFHistos == 1){
 
                   sprintf(histoName, "WF_Trigger_%d_%d",run,event);  
@@ -419,7 +711,10 @@ int main(int argc, char** argv)
                baseLineError_channel1 = baseline_error;
                ampMax_channel1 = fabs(tmpAmp-baseline);
                timeAmpMax_channel1 = BinToTime*tmpTime; 
+               constFrac_channel1 = tmpFrac;     
                timeConstFrac_channel1 = tmpTimeConstFrac;  
+               slopeConstFrac_channel1 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel1 = tmpChi2ConstFrac;     
 
                if(saveWFHistos == 1){
 
@@ -441,7 +736,10 @@ int main(int argc, char** argv)
                baseLineError_channel2 = baseline_error;
                ampMax_channel2 = fabs(tmpAmp-baseline);
                timeAmpMax_channel2 = BinToTime*tmpTime;  
+               constFrac_channel2 = tmpFrac;     
                timeConstFrac_channel2 = tmpTimeConstFrac;  
+               slopeConstFrac_channel2 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel2 = tmpChi2ConstFrac;     
 
                if(saveWFHistos == 1){
 
@@ -463,7 +761,10 @@ int main(int argc, char** argv)
                baseLineError_channel3 = baseline_error;
                ampMax_channel3 = fabs(tmpAmp-baseline);
                timeAmpMax_channel3 = BinToTime*tmpTime;  
+               constFrac_channel3 = tmpFrac;     
                timeConstFrac_channel3 = tmpTimeConstFrac;  
+               slopeConstFrac_channel3 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel3 = tmpChi2ConstFrac;   
 
                if(saveWFHistos == 1){
 
@@ -485,7 +786,10 @@ int main(int argc, char** argv)
                baseLineError_channel4 = baseline_error;
                ampMax_channel4 = fabs(tmpAmp-baseline);
                timeAmpMax_channel4 = BinToTime*tmpTime;
-               timeConstFrac_channel4 = tmpTimeConstFrac;   
+               constFrac_channel4 = tmpFrac;     
+               timeConstFrac_channel4 = tmpTimeConstFrac;  
+               slopeConstFrac_channel4 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel4 = tmpChi2ConstFrac;   
 
                if(saveWFHistos == 1){
 
@@ -507,7 +811,10 @@ int main(int argc, char** argv)
                baseLineError_channel5 = baseline_error;
                ampMax_channel5 = fabs(tmpAmp-baseline);
                timeAmpMax_channel5 = BinToTime*tmpTime;  
-               timeConstFrac_channel5 = tmpTimeConstFrac; 
+               constFrac_channel1 = tmpFrac;     
+               timeConstFrac_channel5 = tmpTimeConstFrac;  
+               slopeConstFrac_channel5 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel5 = tmpChi2ConstFrac;   
 
                if(saveWFHistos == 1){
 
@@ -529,7 +836,10 @@ int main(int argc, char** argv)
                baseLineError_channel6 = baseline_error;
                ampMax_channel6 = fabs(tmpAmp-baseline);
                timeAmpMax_channel6 = BinToTime*tmpTime;   
-               timeConstFrac_channel6 = tmpTimeConstFrac; 
+               constFrac_channel6 = tmpFrac;     
+               timeConstFrac_channel6 = tmpTimeConstFrac;  
+               slopeConstFrac_channel6 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel6 = tmpChi2ConstFrac;   
 
                if(saveWFHistos == 1){
 
@@ -551,7 +861,10 @@ int main(int argc, char** argv)
                baseLineError_channel7 = baseline_error;
                ampMax_channel7 = fabs(tmpAmp-baseline);
                timeAmpMax_channel7 = BinToTime*tmpTime;
-               timeConstFrac_channel7 = tmpTimeConstFrac;     
+               constFrac_channel7 = tmpFrac;     
+               timeConstFrac_channel7 = tmpTimeConstFrac;  
+               slopeConstFrac_channel7 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel7 = tmpChi2ConstFrac;   
 
                if(saveWFHistos == 1){
 
@@ -573,7 +886,10 @@ int main(int argc, char** argv)
                baseLineError_channel8 = baseline_error;
                ampMax_channel8 = fabs(tmpAmp-baseline);
                timeAmpMax_channel8 = BinToTime*tmpTime;  
-               timeConstFrac_channel8 = tmpTimeConstFrac; 
+               constFrac_channel8 = tmpFrac;     
+               timeConstFrac_channel8 = tmpTimeConstFrac;  
+               slopeConstFrac_channel8 = tmpSlopeConstFrac;     
+               chi2ConstFrac_channel8 = tmpChi2ConstFrac;    
 
                if(saveWFHistos == 1){
 
@@ -587,7 +903,9 @@ int main(int argc, char** argv)
             }
  
             tmp.clear();
+            tmp_WF.clear();
             tmp_baseline.clear();
+
             
         }
 
@@ -617,7 +935,7 @@ int main(int argc, char** argv)
             waveForm_channel8.push_back(0.);
 
         }
-
+   
         nt->Fill();  
 
         waveForm_Trigger.clear();
@@ -630,14 +948,15 @@ int main(int argc, char** argv)
         waveForm_channel7.clear(); 
         waveForm_channel8.clear(); 
       }
-
+  
     }
+
 
     TFile *f1 = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
     f1->cd();
     nt->Write("nt");
     f1->Close();
-    
+
     if(saveWFHistos == 1){
       TFile *f2 = new TFile(("histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
       f2->cd();
@@ -668,6 +987,18 @@ int main(int argc, char** argv)
       for(unsigned int ii = 0; ii < h_WF_channel8.size(); ii++)
         for(unsigned int jj = 0; jj < h_WF_channel8[ii].size(); jj++)
             h_WF_channel8[ii][jj]->Write();
+ 
+      for(int ii = 0; ii < 9; ii++){
+          if(ii == 0) sprintf(histoName, "Slope_graph_Trigger"); 
+          else sprintf(histoName, "Slope_graph_channel%d",ii); 
+          gr_slope[ii]->Write(histoName);
+      }
+      for(int ii = 0; ii < 9; ii++){
+          if(ii == 0) sprintf(histoName, "Chi2_graph_Trigger"); 
+          else sprintf(histoName, "Chi2_graph_channel%d",ii); 
+          gr_chi2[ii]->Write(histoName);
+      }
+
       f2->Close();
     }
 
@@ -979,15 +1310,6 @@ int main(int argc, char** argv)
     } 
     
     gSystem -> Exec("rm input.tmp"); 
-}
-
-float findTimeConstFrac(float x1, float y1, float x2, float y2, float x3, float y3, float frac, float amp)
-{
-  float denom = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
-  float m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denom;
-  float q = ((y1+y2+y3)*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1*y1 + x2*y2 + x3*y3))/denom;
-  float time = (amp*frac/100. - q)/m; 
-  return time;
 }
 
 float computeMean(std::vector<float> sample)
