@@ -1,4 +1,4 @@
-//c++ plottersimple_new plottersimple_new.cpp `root-config --cflags --glibs` -o  
+//c++ -o plottersimple_new plottersimple_new.cpp `root-config --cflags --glibs` 
 
 /*
 	Ricordati che la media sara' circa 10ns, cosi' recuperi la scala
@@ -10,6 +10,8 @@ sembra buono:	emailData147_140327184601
 #include "TLegend.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TH1D.h"
+#include "TH2D.h"
 #include "TString.h"
 #include "TSystem.h"
 #include "TTree.h"
@@ -36,21 +38,21 @@ TGraphErrors *sigma_hv = new TGraphErrors();
 TH2F *dtvsamp = new TH2F("dtvsamp","",1000,-0.1,0.,1200,-20.,20.);
 TGraph *chi = new TGraph();
 TGraph *sigma = new TGraph();
-std::vector<float> time0;
-std::vector<float> time1;
-std::vector<float> time2;
+std::vector<double> time0;
+std::vector<double> time1;
+std::vector<double> time2;
 
 TProfile *p_dtvsamp = new TProfile("dtvsamp","",100,-0.1,0.);//,1200,-20.,20.);
 
 int frac = 40;
 
 //costant fraction function
-float trigger (float x1, float y1, float x2, float y2, float x3, float y3, float frazione, float amp, int step, int graf)
+double trigger (double x1, double y1, double x2, double y2, double x3, double y3, double frazione, double amp, int step, int graf)
 {
-float ritorno;
-float denominatore = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
-float m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denominatore;
-float q = ((y1+y2+y3)*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1*y1 + x2*y2 + x3*y3))/denominatore;
+double ritorno;
+double denominatore = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
+double m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denominatore;
+double q = ((y1+y2+y3)*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1*y1 + x2*y2 + x3*y3))/denominatore;
 if (denominatore == 0.) 
 {
 ritorno = x2;
@@ -62,26 +64,26 @@ return ritorno;
 }
 
 //costant fraction slope function
-float deriv (float x1, float y1, float x2, float y2, float x3, float y3, float frazione, float amp, int step, int graf)
+double deriv (double x1, double y1, double x2, double y2, double x3, double y3, double frazione, double amp, int step, int graf)
 {
-float denominatore = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
-float m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denominatore;
+double denominatore = (3*(x1*x1 + x2*x2 + x3*x3) - (x1+x2+x3)*(x1+x2+x3));
+double m = (3*(x1*y1 + x2*y2 + x3*y3) - (x1+x2+x3)*(y1+y2+y3))/denominatore;
 if(denominatore == 0)
 cout<<"NAN!!!!!!!!!!!!!!!!!  ==> "<<endl;
 return m;
 }
 
 //main function
-void plottersimple(TString runFolder, float HV, int point)
+void plottersimple(TString runFolder, double HV, int point)
 {
 std::cout<<frac<<std::endl;
 // General reset
 gROOT->Reset();
 
 // Define histograms
-TH1F* histo[3];
-TH1F *h_base[3];
-TH1F *h_coeff[3];
+TH1D* histo[3];
+TH1D *h_base[3];
+TH1D *h_coeff[3];
 char h1[10];
 char hb[10];
 char hc[10];
@@ -91,9 +93,9 @@ char hc[10];
     	sprintf (h1,"Ch%d",iw);
 	sprintf (hb,"h_base%d",iw);
 	sprintf (hc,"h_coeff%d",iw);
-	h_base[iw] = new TH1F(hb,hb,1000,-0.1,0.01);
- 	h_coeff[iw] = new TH1F(hc,hc,1000,-0.1,0.01);
-   	histo[iw] = new TH1F(h1,h1,2000,0.,100.);	//1000,0.,50. -> all but Run012, which uses 2000,0.,100.
+	h_base[iw] = new TH1D(hb,hb,1000,-0.1,0.01);
+ 	h_coeff[iw] = new TH1D(hc,hc,1000,-0.1,0.01);
+   	histo[iw] = new TH1D(h1,h1,2000,0.,100.);	//1000,0.,50. -> all but Run012, which uses 2000,0.,100.
     	histo[iw] -> SetXTitle ("Time (ns)");
     	histo[iw] -> SetYTitle ("Amplitude (V)");
     	histo[iw]->SetLineWidth(2);
@@ -106,24 +108,25 @@ histo[1]->SetLineColor(kBlue+1);
 histo[2]->SetLineColor(kGreen+1); 
 
 // Tree branches and tree strcuture
-float piedistallo[3] = {0.,0.,0.};
-float piedrms[3] = {0.,0.,0.};
-float coeffmedio[3] = {0.,0.,0.};
-float ampMax[3];
-float tStamp[3];
-float baseline[3]; 
-float coeff[3];
+double piedistallo[3] = {0.,0.,0.};
+double piedrms[3] = {0.,0.,0.};
+double coeffmedio[3] = {0.,0.,0.};
+double ampMax[3];
+double tStamp[3];
+double baseline[3]; 
+double coeff[3];
 
 TTree *nt = new TTree("nt","nt");
 
-nt->Branch("ampMax",&ampMax,"ampMax[3]/F"); 
-nt->Branch("tStamp",&tStamp,"tStamp[3]/F"); 
-nt->Branch("baseline",&baseline,"baseline[3]/F"); 
-nt->Branch("coeff",&coeff,"coeff[3]/F"); 
-nt->Branch("coeffmedio",&coeffmedio,"coeffmedio[3]/F"); 
-nt->Branch("piedistallo",&piedistallo,"piedistallo[3]/F"); 
-nt->Branch("piedrms",&piedrms,"piedrms[3]/F"); 
+nt->Branch("ampMax",&ampMax,"ampMax[3]/D"); 
+nt->Branch("tStamp",&tStamp,"tStamp[3]/D"); 
+nt->Branch("baseline",&baseline,"baseline[3]/D"); 
+nt->Branch("coeff",&coeff,"coeff[3]/D"); 
+nt->Branch("coeffmedio",&coeffmedio,"coeffmedio[3]/D"); 
+nt->Branch("piedistallo",&piedistallo,"piedistallo[3]/D"); 
+nt->Branch("piedrms",&piedrms,"piedrms[3]/D"); 
 
+/*
 // define graphics
 TCanvas *c = new TCanvas("c","c");
 c ->cd(); 
@@ -138,7 +141,7 @@ leg->SetTextFont(41);
 	leg->AddEntry(histo[iw],histo[iw]->GetTitle(),"l");
   
 leg->Draw();
-
+*/
 // dump the waveform file list into a temporary file
 //  TString command = "ls ../WaveForms/" + runFolder + "/*Ch1* > input.tmp"; 
 TString command = "ls " + runFolder + "/*Ch1* > input.tmp"; 
@@ -172,7 +175,7 @@ TString waveFile[400];
 		{
 		// cout << "Reading... " << waveFile[iw] << endl;
 
-      		float counts=0;
+      		double counts=0;
       		ampMax[iw] = 0;
 	        tStamp[iw] = 0;
 
@@ -252,20 +255,20 @@ fw->Close();
 //***************************************************************************************************************************************
 //********************************************        READING NTUPLES      **************************************************************
 
-int reading(TString runFolder, float HV, int point)
+int reading(TString runFolder, double HV, int point)
 {
 cout<<"num = "<<point<<endl;
 
 TFile *Reading = new TFile(runFolder + ".root");
 TTree *t1 = (TTree*)Reading->Get("nt");    	
 
-float amplitude[3];
-float time[3];
-float offset[3];
-float incl[3];
-float inclmedia[3];
-float base_mean[3];
-float base_rms[3];
+double amplitude[3];
+double time[3];
+double offset[3];
+double incl[3];
+double inclmedia[3];
+double base_mean[3];
+double base_rms[3];
 
 t1->SetBranchAddress("tStamp",&time);
 t1->SetBranchAddress("ampMax",&amplitude);	
@@ -276,22 +279,22 @@ t1->SetBranchAddress("piedistallo",&base_mean);
 t1->SetBranchAddress("piedrms",&base_rms);
 
 t1->GetEntry(t1->GetEntries()-1);
-float cut0 = base_rms[0];
-float cut1 = base_rms[1];
-float cut2 = base_rms[2];
+double cut0 = base_rms[0];
+double cut1 = base_rms[1];
+double cut2 = base_rms[2];
 
-TH1F *h_diff = new TH1F ("h_diff","h_diff",1200,6.,18.);
-TH1F *h_mean_mcp = new TH1F ("h_mean_mcp","h_mean_mcp",800,-20.,20.);
-TH1F *h_1_mcp = new TH1F ("h_1_mcp","h_1_mcp",1200,-50.,50.);
-TH1F *h_mcp_2 = new TH1F ("h_mcp_2","h_mcp_2",1200,-50.,50.);
+TH1D *h_diff = new TH1D ("h_diff","h_diff",1200,6.,18.);
+TH1D *h_mean_mcp = new TH1D ("h_mean_mcp","h_mean_mcp",800,-20.,20.);
+TH1D *h_1_mcp = new TH1D ("h_1_mcp","h_1_mcp",1200,-50.,50.);
+TH1D *h_mcp_2 = new TH1D ("h_mcp_2","h_mcp_2",1200,-50.,50.);
 
-TH1F *h_offset0 = new TH1F ("h_offset0","h_offset0",1000,-0.005,0.005);
-TH1F *h_offset1 = new TH1F ("h_offset1","h_offset1",1000,-0.005,0.005);
-TH1F *h_offset2 = new TH1F ("h_offset2","h_offset2",1000,-0.005,0.005);
+TH1D *h_offset0 = new TH1D ("h_offset0","h_offset0",1000,-0.005,0.005);
+TH1D *h_offset1 = new TH1D ("h_offset1","h_offset1",1000,-0.005,0.005);
+TH1D *h_offset2 = new TH1D ("h_offset2","h_offset2",1000,-0.005,0.005);
 
-TH1F *h_incl0 = new TH1F ("h_incl0","h_incl0",1000,-0.1,0.01);
-TH1F *h_incl1 = new TH1F ("h_incl1","h_incl1",1000,-0.1,0.01);
-TH1F *h_incl2 = new TH1F ("h_incl2","h_incl2",1000,-0.1,0.01);
+TH1D *h_incl0 = new TH1D ("h_incl0","h_incl0",1000,-0.1,0.01);
+TH1D *h_incl1 = new TH1D ("h_incl1","h_incl1",1000,-0.1,0.01);
+TH1D *h_incl2 = new TH1D ("h_incl2","h_incl2",1000,-0.1,0.01);
 
 TF1 *gauss = new TF1("gauss","[3]+[1]/sqrt(2*TMath::Pi()*[0]*[0])*exp(-(x-[2])*(x-[2])/(2*[0]*[0]))",-50,50);
 gauss->SetParName(0,"sigma");
@@ -321,18 +324,18 @@ gauss->SetNpx(1000000);
 //***************************************************     DRAW CONCIDENCES     **********************************************************
   //0,1 -> external detectors
   //2 -> mcp detector
-  
+/*  
 TCanvas *scatter = new TCanvas();
 scatter -> cd();
 dtvsamp->Draw("colz");
 scatter->Print("scatter.root","root");
-
+*/
 TCanvas *coincidenze = new TCanvas();
 coincidenze -> Divide (4,1);
 
 //h_diff => difference
-float media = 0.;
-float contenuto = 0.;
+double media = 0.;
+double contenuto = 0.;
 	for (int in = 300; in < 600; ++in)
 		if (h_diff->GetBinContent(in) > contenuto)		
   		{
@@ -347,10 +350,10 @@ h_diff->SetTitle("difference");
 coincidenze -> cd(1);
 gauss->SetParameters(0.05,1.,media,1.);	
 h_diff->Fit("gauss","","",9.,12.);		
-h_diff->Draw(),
+//h_diff->Draw(),
 std::cout<<"sigma difference = "<<gauss->GetParameter(0)<<std::endl;
-float sigma_diff = fabs(gauss->GetParameter(0));
-float mean_diff = fabs(gauss->GetParameter(2));
+double sigma_diff = fabs(gauss->GetParameter(0));
+double mean_diff = fabs(gauss->GetParameter(2));
 
 
 //h_1_mcp => 1 - mcp
@@ -359,7 +362,7 @@ h_1_mcp->SetTitle("1 - mcp");
 coincidenze -> cd(3);
 gauss->SetParameters(0.1,5.,7.6,1.);
 h_1_mcp->Fit("gauss","","",-25.,25.);
-h_1_mcp->Draw();
+//h_1_mcp->Draw();
 std::cout<<"sigma 1 - mcp = "<<gauss->GetParameter(0)<<std::endl;
 
 //h_mcp_2 => mcp - 2
@@ -368,12 +371,12 @@ h_mcp_2->SetTitle("mcp - 2");
 coincidenze -> cd(4);
 gauss->SetParameters(0.15,10.,3.,3.);	//Run 006
 h_mcp_2->Fit("gauss","","",1.,5.);
-h_mcp_2->Draw();
+//h_mcp_2->Draw();
 std::cout<<"sigma mcp - 2 = "<<gauss->GetParameter(0)<<std::endl;
 
 //h_mean_mcp => mean - mcp
-float mediamcp = 0.;
-float contenutomcp = 0.;
+double mediamcp = 0.;
+double contenutomcp = 0.;
 	for (int inn = 430; inn < 480; ++inn)
 		if (h_mean_mcp->GetBinContent(inn) > contenutomcp)		
 		{
@@ -388,10 +391,10 @@ h_mean_mcp->SetTitle("mean - mcp");
 coincidenze -> cd(2);
 gauss->SetParameters(0.05,10.,mediamcp,3.);	
 h_mean_mcp->Fit("gauss","","",1.,4.);
-h_mean_mcp->Draw();
+//h_mean_mcp->Draw();
 std::cout<<"sigma mean - mcp = "<<gauss->GetParameter(0)<<std::endl;
-float sigma_mcp = gauss->GetParameter(0);
-float mean_mcp = gauss->GetParameter(2);
+double sigma_mcp = gauss->GetParameter(0);
+double mean_mcp = gauss->GetParameter(2);
 
 sigma_hv->SetPoint(point, HV,1000.*sqrt(sigma_mcp*sigma_mcp-sigma_diff*sigma_diff));
 
@@ -409,8 +412,8 @@ int fake = 0;
 int trfake = 0;
 int drake = 0;
 	
-TH1F *doppie = new TH1F ("doppie","doppie",1000,2.,12.);
-TH1F *triple = new TH1F ("triple","triple",1000,2.,12.);
+TH1D *doppie = new TH1D ("doppie","doppie",1000,2.,12.);
+TH1D *triple = new TH1D ("triple","triple",1000,2.,12.);
 doppie -> SetFillColor (kGreen);
 triple -> SetFillColor (kRed);
 
@@ -440,35 +443,35 @@ cout<<"cut2 vale "<<cut2<<endl;
 	 if (fabs(time[1]-time[0] - 13.5) < 1.5 && amplitude[1] < -fabs(5*cut1) && amplitude[0] < -fabs(5*cut0))		fake++;	
          }
 
-float rfake = (float)fake*3.*sigma_diff/1.5;
-float rtrfake = (float)trfake*3.*sigma_mcp/1.5;
+double rfake = (double)fake*3.*sigma_diff/1.5;
+double rtrfake = (double)trfake*3.*sigma_mcp/1.5;
 
 TCanvas *p_scatter = new TCanvas();
 p_scatter -> cd();
 TF1 *retta = new TF1 ("retta","pol1",-0.1,0.);
 p_dtvsamp->Fit("retta","","",-0.02,-5*cut2);		//Run006
-p_dtvsamp->Draw("colz");
+//p_dtvsamp->Draw("colz");
 cout<<"correggerei il problema dell'amplitude walk usando la retta y = "<<retta->GetParameter(1)<<" x + "<<retta->GetParameter(0)<<endl;
-p_scatter->Print("scatter.root","root");
+//p_scatter->Print("scatter.root","root");
 
 cout << "saved / triggered / double fake / triple fake: " << benissimo<< " / " << bene << " / " << rfake << " / "<< trfake<< endl;
 cout << "fake = " <<fake<<endl;
-float efficiency = (((float)benissimo-rtrfake)/((float)bene-rfake));
-float error = sqrt (efficiency * (1. - efficiency) / ((float)bene-rfake));
+double efficiency = (((double)benissimo-rtrfake)/((double)bene-rfake));
+double error = sqrt (efficiency * (1. - efficiency) / ((double)bene-rfake));
 cout.setf(std::ios::fixed);
 cout.precision(5);
 cout << "efficiency is (" <<efficiency*100.<< " +- " <<error*100.<<")\%" << endl;
 
 eff_hv->SetPoint(point, HV, efficiency);
 eff_hv->SetPointError(point, 5., error);
-
+/*
 TCanvas *cfr = new TCanvas();
 cfr->SetTitle("Doppie & Trilpe");
 cfr->cd();
 doppie -> Draw();
 triple -> Draw("same");
 cfr->Print("cfr.root","root");
-
+*/
 Reading->Close();
 //***************************************************************************************************************************************
 //************************************************     DRAW SIGMA - CHI    **************************************************************
@@ -487,7 +490,7 @@ Reading->Close();
   sigma->Draw("AP");
   TF1 *para = new TF1 ("para","pol2",0,60);	
   sigma->Fit("para","","",7.,55.);
-  float minimum = para->GetMinimumX();
+  double minimum = para->GetMinimumX();
   cout<<"la frazione costante dell'ampiezza che sceglierei è "<<(int)minimum<<endl;
 */
 
@@ -507,7 +510,7 @@ Reading->Close();
 		sprintf(count, "%03d", i);
 		TString help;
 		help += count;
-		TH1F* h_tmp = (TH1F*)MyFile->Get("Ch0_"+help);
+		TH1D* h_tmp = (TH1D*)MyFile->Get("Ch0_"+help);
 		h_tmp->Draw("same");
 	}
 */
@@ -519,7 +522,7 @@ int main(int argc, char** argv)
 {
 TApplication *myApp = new TApplication("example",&argc, argv);
 TString run;	
-float voltage;		
+double voltage;		
 int num;
 /*
 run = "WFRun005";	voltage = 2150;		num = 5;
@@ -545,19 +548,19 @@ reading(run, voltage, num);
 run = "WFRun010";	voltage = 2250;		num = 10;
 //plottersimple(run, voltage, num);
 reading(run, voltage, num);
-
+*/
 run = "WFRun012";	voltage = 1750;		num = 12;
-//plottersimple(run, voltage, num);
+plottersimple(run, voltage, num);
 reading(run, voltage, num);
-
+/*
 run = "WFRun013";	voltage = 1750;		num = 13;
 plottersimple(run, voltage, num);
 reading(run, voltage, num);
-*/
 
 run = "WFRun015";	voltage = 1750;		num = 15;
 plottersimple(run, voltage, num);
 reading(run, voltage, num);
+*/
 
 TCanvas *finale = new TCanvas();
 finale->Divide(2,1);
