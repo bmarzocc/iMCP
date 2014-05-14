@@ -3,7 +3,7 @@
     simple program to read bin files
     compile with --->  c++ -o unPacker `root-config --cflags --glibs` unPacker.cpp
          or with --->  c++ -o unPacker unPacker.cpp `root-config --cflags --glibs`
-    run with --->  ./unPacker WaveForms 5 10 1 0 // usage: ./unPacker directory nPoints-interpolation baseline-time saveWaveForm saveWFHistos
+    run with --->  ./unPacker WaveForms 5 10 1 0 // usage: ./unPacker directory/file.bin nPoints-interpolation baseline-time saveWaveForm saveWFHistos
     
 *************************************************************/
 
@@ -62,8 +62,13 @@ int main(int argc, char** argv)
     std::cout << "saveWFHistos = " << saveWFHistos << std::endl;
 
     int binBaseLine = int(timeBaseLine/BinToTime);
+    
+    TString command;
+    std::string tmpRunFolder = std::string(runFolder);
 
-    TString command = "ls "+ std::string(runFolder) + "/*.bin > input.tmp"; 
+    if(tmpRunFolder.find(".bin") != std::string::npos) command = "ls "+ tmpRunFolder + " > input.tmp"; 
+    else command = "ls "+ tmpRunFolder + "/*.bin > input.tmp"; 
+
     gSystem -> Exec(command); 
 
     int nChannels = 0;
@@ -1052,13 +1057,31 @@ int main(int argc, char** argv)
     }
 
 
-    TFile *f1 = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
+    TFile *f1;
+    
+    std::string tmpRunFolder_cp = tmpRunFolder;
+    if(tmpRunFolder.find(".bin") != std::string::npos){
+       tmpRunFolder_cp.erase(tmpRunFolder_cp.size()-4,tmpRunFolder_cp.size()-1);
+       replace(tmpRunFolder_cp.begin(),tmpRunFolder_cp.end(),'/','_');
+       f1 = new TFile((tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
+    }
+    else f1 = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
     f1->cd();
     nt->Write("nt");
     f1->Close();
 
     if(saveWFHistos == 1){
-      TFile *f2 = new TFile(("histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
+       
+      tmpRunFolder_cp = tmpRunFolder;
+      
+      TFile *f2;
+      if(tmpRunFolder.find(".bin") != std::string::npos){
+         tmpRunFolder_cp.erase(tmpRunFolder_cp.size()-4,tmpRunFolder_cp.size()-1);
+         replace(tmpRunFolder_cp.begin(),tmpRunFolder_cp.end(),'/','_');
+         f2 = new TFile(("histos_"+tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
+      }
+      else f2 = new TFile(("histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
+
       f2->cd();
       for(unsigned int ii = 0; ii < h_WF_Trigger.size(); ii++)
         for(unsigned int jj = 0; jj < h_WF_Trigger[ii].size(); jj++)
