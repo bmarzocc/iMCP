@@ -119,10 +119,15 @@ int main(int argc, char** argv)
     float sigma_double23 = 0.;
     float sigmaError_double23 = 0.;
     float mean_double23 = 0.;
+    float sigmaMCP_output = 0.;
+    float sigmaMEAN_output = 0.;
+    float sigmaPLANA_output = 0.;
     float nTriple_output = 0.;
     float nTriple_Fake_output = 0.;
     float nDouble_output = 0.;
     float nDouble_Fake_output = 0.;
+    float Efficiency = 0.;
+    float EfficiencyError = 0.;
     
     TTree *nt_output = new TTree("nt","nt");
     nt_output->SetDirectory(0);
@@ -168,10 +173,15 @@ int main(int argc, char** argv)
     nt_output->Branch("sigma_double23",&sigma_double23,"sigma_double23/F"); 
     nt_output->Branch("sigmaError_double23",&sigmaError_double23,"sigmaError_double23/F"); 
     nt_output->Branch("mean_double23",&mean_double23,"mean_double23/F"); 
-    nt_output->Branch("nTriple_output",&nTriple_output,"nTriple_output/F"); 
-    nt_output->Branch("nTriple_Fake_output",&nTriple_Fake_output,"nTriple_Fake_output/F"); 
-    nt_output->Branch("nDouble_output",&nDouble_output,"nDouble_output/F"); 
-    nt_output->Branch("nDouble_Fake_output",&nDouble_Fake_output,"nDouble_Fake_output/F"); 
+    nt_output->Branch("sigmaMCP",&sigmaMCP_output,"sigmaMCP/F"); 
+    nt_output->Branch("sigmaMEAN",&sigmaMEAN_output,"sigmaMEAN/F"); 
+    nt_output->Branch("sigmaPLANA",&sigmaPLANA_output,"sigmaPLANA/F"); 
+    nt_output->Branch("nTriple",&nTriple_output,"nTriple/F"); 
+    nt_output->Branch("nTriple_Fake",&nTriple_Fake_output,"nTriple_Fake/F"); 
+    nt_output->Branch("nDouble",&nDouble_output,"nDouble/F"); 
+    nt_output->Branch("nDouble_Fake",&nDouble_Fake_output,"nDouble_Fake/F"); 
+    nt_output->Branch("Efficiency",&Efficiency,"Efficiency/F"); 
+    nt_output->Branch("EfficiencyError",&EfficiencyError,"EfficiencyError/F"); 
 
 
     TF1* gGauss = new TF1("gGauss", "[0]/sqrt(2*TMath::Pi()*[2]*[2])*exp(-(x-[1])*(x-[1])/(2*[2]*[2]))");
@@ -328,14 +338,17 @@ int main(int argc, char** argv)
     float sigmaMCP = fabs(sigma_diff/sqrt(2.));
     float sigmaMCPE = fabs(sigma_diffE/sqrt(2.));
     std::cout << " sigmaMCP = " << sigmaMCP*1000 << " +/- " << sigmaMCPE*1000 << " ps" << std::endl;
+    sigmaMCP_output = sigmaMCP;
 
     float sigmaMEAN = fabs(sigmaMCP/sqrt(2.));
     float sigmaMEANE = fabs(sigmaMCPE/sqrt(2.));
     std::cout << " sigmaMEAN = " << sigmaMEAN*1000 << " +/- " << sigmaMEANE*1000 << " ps" << std::endl;
+    sigmaMEAN_output = sigmaMEAN;
 
     float sigmaPLANA = sqrt( pow(sigma_mcp,2.) - pow(sigmaMEAN,2.) );
     float sigmaPLANAE = (pow(2.*sigma_mcp*sigma_mcpE,2.)+pow(2.*sigmaMEAN*sigmaMEANE,2.))/2./sqrt(pow(sigma_mcp,2.)-pow(sigmaMEAN,2.));
     std::cout << " sigmaPLANA = " << sigmaPLANA*1000 << " +/- " << sigmaPLANAE*1000 << " ps" << std::endl;
+    sigmaPLANA_output = sigmaPLANA;
 
     std::cout << std::endl;
 
@@ -381,10 +394,12 @@ int main(int argc, char** argv)
     std::cout << "nDouble = " << float(nDouble) << " - nDouble_fake = " << nDouble_fake << std::endl;
     std::cout << "Efficiencies = " << eff*100 << " +/- "<< eff_err*100 << " %" << std::endl;
 
-    nTriple_output = nTriple;
-    nTriple_Fake_output = nTriple_fake;
-    nDouble_output = nDouble;
-    nDouble_Fake_output = nDouble_fake;
+    nTriple_output = (float)nTriple;
+    nTriple_Fake_output = (float)nTriple_fake;
+    nDouble_output = (float)nDouble;
+    nDouble_Fake_output = (float)nDouble_fake;
+    Efficiency = eff;
+    EfficiencyError = eff_err;
 
     std::cout << std::endl;
 
@@ -435,16 +450,9 @@ int main(int argc, char** argv)
         if((timeConstFrac_channel2-timeConstFrac_channel1) < 0.) continue;
 
         isDouble = 1;
-        h_double->Fill(timeAmpMax_channel2-timeAmpMax_channel1);
         
-        if(ampMax_channel3 > thresAmp[3] && timeAmpMax_channel3/BinToTime >= 2 && timeAmpMax_channel3/BinToTime <= waveForm_channel3->size()-2){
-      
-           isTriple = 1;
-           h_triple->Fill((timeConstFrac_channel2+timeConstFrac_channel1)/2.-timeConstFrac_channel3);
-           h_double13->Fill(timeAmpMax_channel1-timeAmpMax_channel3);
-           h_double23->Fill(timeAmpMax_channel2-timeAmpMax_channel3);
-        }
-
+        if(ampMax_channel3 > thresAmp[3] && timeAmpMax_channel3/BinToTime >= 2 && timeAmpMax_channel3/BinToTime <= waveForm_channel3->size()-2) isTriple = 1;
+  
         isDouble_output = isDouble;
         isTriple_output = isTriple;
 
