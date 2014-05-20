@@ -39,9 +39,11 @@
 
 using namespace std;
 
+bool computeBestFrac = false;
+
 const float BinToTime = 0.2;
-const float thresAmp = 0.;
-const float thresAmpCh3 = 0.;
+const float thresAmp[9] = {0.,0.,0.,0.,0.,0.,0.,0.,0.};
+const float isNegative[9] = {1,1,1,0,1,1,1,1,1};
 
 float computeMean(std::vector<float> sample);
 float computeDispersion(std::vector<float> sample);
@@ -141,7 +143,10 @@ int main(int argc, char** argv)
 
     TFile* inputFile;
     TTree* inputTree;
-
+    
+    nPointsInterpolation_output = nPointsInterpolation;
+     
+  if(computeBestFrac == true){
     while(getline(inFile,line)){
 
       ifile++;
@@ -151,10 +156,6 @@ int main(int argc, char** argv)
       inputFile = TFile::Open(line.c_str());
       inputTree = (TTree*)inputFile->Get("eventRawData");
       InitTree(inputTree);
-
-      int isNegative[9];
-      for(int ii = 0; ii < 9; ii++)
-          isNegative[ii] = -1;
 
       for(int ievent=0; ievent<inputTree->GetEntries(); ievent++)
       {
@@ -184,7 +185,7 @@ int main(int argc, char** argv)
             float tmpTimeConstFrac = 0.;
 
             //std::cout << "isNegative[" << iCh << "] = " << isNegative[iCh] << std::endl;
-            if(isNegative[iCh] == -1){
+            if(isNegative[iCh] == 1){
                tmpAmp = tmp[iCh].at(0);
                tmpTime = map_AmpTm[iCh][tmp[iCh].at(0)];
             }else{
@@ -204,18 +205,10 @@ int main(int argc, char** argv)
 		    ref = iSample;
                     if(absAmp <= absFrac) break;
                 }
-                if(iCh != 3){
-                   if(fabs(channels[iCh].at(tmpTime)-baseline) > thresAmp){
-                      TimeConstFraction timeCF(ref,tmpTime,channels[iCh],fraction,baseline,nPointsInterpolation,BinToTime);
-                      h_Slope[iCh][ii]->Fill(timeCF.getSlope());
-                      h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
-                   }
-                }else{
-                   if(fabs(channels[iCh].at(tmpTime)-baseline) > thresAmpCh3){
-                      TimeConstFraction timeCF(ref,tmpTime,channels[iCh],fraction,baseline,nPointsInterpolation,BinToTime);
-                      h_Slope[iCh][ii]->Fill(timeCF.getSlope());
-                      h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
-                   }
+                if(fabs(channels[iCh].at(tmpTime)-baseline) > thresAmp[iCh]){
+                   TimeConstFraction timeCF(ref,tmpTime,channels[iCh],fraction,baseline,nPointsInterpolation,BinToTime);
+                   h_Slope[iCh][ii]->Fill(timeCF.getSlope());
+                   h_Chi2[iCh][ii]->Fill(timeCF.getChi2());
                 }
             }
 
@@ -270,6 +263,11 @@ int main(int argc, char** argv)
         fitted_fraction.push_back(-1*func->GetParameter(1)/(2*func->GetParameter(2)));
 
     }
+
+  }else{
+    for(int iCh=0; iCh<nCh; iCh++)
+        fitted_fraction.push_back(0.55);
+  }
 
     ifile=0;
     line = "";
@@ -800,6 +798,18 @@ int main(int argc, char** argv)
 
     f1->cd();
     nt->Write("nt");
+
+    for(int ii = 0; ii < nCh; ii++){
+        if(ii == 0) sprintf(histoName, "Slope_graph_Trigger"); 
+        else sprintf(histoName, "Slope_graph_channel%d",ii); 
+        gr_slope[ii]->Write(histoName);
+    }
+    for(int ii = 0; ii < nCh; ii++){
+        if(ii == 0) sprintf(histoName, "Chi2_graph_Trigger"); 
+        else sprintf(histoName, "Chi2_graph_channel%d",ii); 
+        gr_chi2[ii]->Write(histoName);
+    }
+
     f1->Close();
     
     if(saveWFHistos == 1){
@@ -824,17 +834,6 @@ int main(int argc, char** argv)
           if(triggerChannel != 6) h_WF_channel6[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Write();
           if(triggerChannel != 7) h_WF_channel7[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Write();
           if(triggerChannel != 8) h_WF_channel8[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Write();
-      }
-    
-      for(int ii = 0; ii < nCh; ii++){
-          if(ii == 0) sprintf(histoName, "Slope_graph_Trigger"); 
-          else sprintf(histoName, "Slope_graph_channel%d",ii); 
-          gr_slope[ii]->Write(histoName);
-      }
-      for(int ii = 0; ii < nCh; ii++){
-          if(ii == 0) sprintf(histoName, "Chi2_graph_Trigger"); 
-          else sprintf(histoName, "Chi2_graph_channel%d",ii); 
-          gr_chi2[ii]->Write(histoName);
       }
 
       f2->Close();
