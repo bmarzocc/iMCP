@@ -258,6 +258,7 @@ using namespace std;
       }
     
       waveForm_Trigger.clear();
+      waveForm_channel0.clear();
       waveForm_channel1.clear();
       waveForm_channel2.clear();
       waveForm_channel3.clear();
