@@ -318,6 +318,9 @@ int main(int argc, char** argv)
         tmp_pair = std::make_pair(run,event);
         vec_run_event.push_back(tmp_pair);
 
+        //---reset
+        adcSciFront = 0;
+
         baseLine_Trigger = 0.;
         baseLine_channel0 = 0.;
         baseLine_channel1 = 0.;
@@ -428,6 +431,15 @@ int main(int argc, char** argv)
         chi2ConstFrac_channel7 = 0.;
         chi2ConstFrac_channel8 = 0.;
         
+        //---start filling
+        for(int ichAdc=0; ichAdc<nAdcChannels; ichAdc++)
+        {
+            if(adcBoard[ichAdc] == 1 && adcChannel[ichAdc] == 0)
+            {
+                adcSciFront = ichAdc;
+                break;
+            }
+        }
         for(int iSample=0; iSample<nDigiSamples; iSample++){
             channels[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
             tmp[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
@@ -792,9 +804,9 @@ int main(int argc, char** argv)
     if(tmpRunFolder.find(".root") != std::string::npos){
        tmpRunFolder_cp.erase(tmpRunFolder_cp.size()-5,tmpRunFolder_cp.size()-1);
        replace(tmpRunFolder_cp.begin(),tmpRunFolder_cp.end(),'/','_');
-       f1 = new TFile((tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
+       f1 = new TFile(("output/"+tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
     }
-    else f1 = new TFile((std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
+    else f1 = new TFile(("output/"+std::string(runFolder)+"_tree.root").c_str(),"RECREATE"); 
 
     f1->cd();
     nt->Write("nt");
@@ -819,9 +831,9 @@ int main(int argc, char** argv)
       if(tmpRunFolder.find(".root") != std::string::npos){
          tmpRunFolder_cp.erase(tmpRunFolder_cp.size()-5,tmpRunFolder_cp.size()-1);
          replace(tmpRunFolder_cp.begin(),tmpRunFolder_cp.end(),'/','_');
-         f2 = new TFile(("histos_"+tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
+         f2 = new TFile(("output/histos_"+tmpRunFolder_cp+"_tree.root").c_str(),"RECREATE");
       }
-      else f2 = new TFile(("histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
+      else f2 = new TFile(("output/histos_"+std::string(runFolder)+".root").c_str(),"RECREATE"); 
       f2->cd();
       for(unsigned int ii = 0; ii < vec_run_event.size(); ii++){
           h_WF_Trigger[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Write();
@@ -871,8 +883,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_Trigger[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_trigger_total.png","png");
-          c0 -> Print("WF_trigger_total.pdf","pdf");
+          c0 -> Print("output/WF_trigger_total.png","png");
+          c0 -> Print("output/WF_trigger_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -904,8 +916,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel0[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel0_total.png","png");
-          c0 -> Print("WF_channel0_total.pdf","pdf");
+          c0 -> Print("output/WF_channel0_total.png","png");
+          c0 -> Print("output/WF_channel0_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -937,8 +949,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel1[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel1_total.png","png");
-          c0 -> Print("WF_channel1_total.pdf","pdf");
+          c0 -> Print("output/WF_channel1_total.png","png");
+          c0 -> Print("output/WF_channel1_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -970,8 +982,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel2[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel2_total.png","png");
-          c0 -> Print("WF_channel2_total.pdf","pdf");
+          c0 -> Print("output/WF_channel2_total.png","png");
+          c0 -> Print("output/WF_channel2_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1003,8 +1015,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel3[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel3_total.png","png");
-          c0 -> Print("WF_channel3_total.pdf","pdf");
+          c0 -> Print("output/WF_channel3_total.png","png");
+          c0 -> Print("output/WF_channel3_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1036,8 +1048,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel4[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel4_total.png","png");
-          c0 -> Print("WF_channel4_total.pdf","pdf");
+          c0 -> Print("output/WF_channel4_total.png","png");
+          c0 -> Print("output/WF_channel4_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1069,8 +1081,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel5[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel5_total.png","png");
-          c0 -> Print("WF_channel5_total.pdf","pdf");
+          c0 -> Print("output/WF_channel5_total.png","png");
+          c0 -> Print("output/WF_channel5_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1102,8 +1114,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel6[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel6_total.png","png");
-          c0 -> Print("WF_channel6_total.pdf","pdf");
+          c0 -> Print("output/WF_channel6_total.png","png");
+          c0 -> Print("output/WF_channel6_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1135,8 +1147,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel7[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel7_total.png","png");
-          c0 -> Print("WF_channel7_total.pdf","pdf");
+          c0 -> Print("output/WF_channel7_total.png","png");
+          c0 -> Print("output/WF_channel7_total.pdf","pdf");
 
           max.clear();
           min.clear();
@@ -1168,8 +1180,8 @@ int main(int argc, char** argv)
           for(unsigned int ii = 0; ii < vec_run_event.size(); ii++)
                h_WF_channel8[vec_run_event.at(ii).first][vec_run_event.at(ii).second]->Draw("same"); 
                
-          c0 -> Print("WF_channel8_total.png","png");
-          c0 -> Print("WF_channel8_total.pdf","pdf");
+          c0 -> Print("output/WF_channel8_total.png","png");
+          c0 -> Print("output/WF_channel8_total.pdf","pdf");
 
           max.clear();
           min.clear();
