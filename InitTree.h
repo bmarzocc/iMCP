@@ -19,6 +19,17 @@
    float         timeConstFrac_Trigger;
    float         slopeConstFrac_Trigger;
    float         chi2ConstFrac_Trigger;
+   std::vector<float>   *waveForm_channel0;
+   float         baseLine_channel0;
+   float         baselineDispersion_channel0;
+   float         baseLineGlobal_channel0;
+   float         baselineDispersionGlobal_channel0;
+   float         ampMax_channel0;
+   float         timeAmpMax_channel0;
+   float         constFrac_channel0;
+   float         timeConstFrac_channel0;
+   float         slopeConstFrac_channel0;
+   float         chi2ConstFrac_channel0;
    std::vector<float>   *waveForm_channel1;
    float         baseLine_channel1;
    float         baselineDispersion_channel1;
@@ -124,6 +135,17 @@
    TBranch        *b_timeConstFrac_Trigger;   //!
    TBranch        *b_slopeConstFrac_Trigger;   //!
    TBranch        *b_chi2ConstFrac_Trigger;   //!
+   TBranch        *b_waveForm_channel0;   //!
+   TBranch        *b_baseLine_channel0;   //!
+   TBranch        *b_baselineDispersion_channel0;   //!
+   TBranch        *b_baseLineGlobal_channel0;   //!
+   TBranch        *b_baselineDispersionGlobal_channel0;   //!
+   TBranch        *b_ampMax_channel0;   //!
+   TBranch        *b_timeAmpMax_channel0;   //!
+   TBranch        *b_constFrac_channel0;   //!
+   TBranch        *b_timeConstFrac_channel0;   //!
+   TBranch        *b_slopeConstFrac_channel0;   //!
+   TBranch        *b_chi2ConstFrac_channel0;   //!
    TBranch        *b_waveForm_channel1;   //!
    TBranch        *b_baseLine_channel1;   //!
    TBranch        *b_baselineDispersion_channel1;   //!
@@ -217,6 +239,7 @@
 
      // Set object pointer
      waveForm_Trigger = 0;
+     waveForm_channel0 = 0;
      waveForm_channel1 = 0;
      waveForm_channel2 = 0;
      waveForm_channel3 = 0;
@@ -242,6 +265,17 @@
      nt->SetBranchAddress("timeConstFrac_Trigger", &timeConstFrac_Trigger, &b_timeConstFrac_Trigger);
      nt->SetBranchAddress("slopeConstFrac_Trigger", &slopeConstFrac_Trigger, &b_slopeConstFrac_Trigger);
      nt->SetBranchAddress("chi2ConstFrac_Trigger", &chi2ConstFrac_Trigger, &b_chi2ConstFrac_Trigger);
+     nt->SetBranchAddress("waveForm_channel0", &waveForm_channel0, &b_waveForm_channel0);
+     nt->SetBranchAddress("baseLine_channel0", &baseLine_channel0, &b_baseLine_channel0);
+     nt->SetBranchAddress("baselineDispersion_channel0", &baselineDispersion_channel0, &b_baselineDispersion_channel0);
+     nt->SetBranchAddress("baseLineGlobal_channel0", &baseLineGlobal_channel0, &b_baseLineGlobal_channel0);
+     nt->SetBranchAddress("baselineDispersionGlobal_channel0", &baselineDispersionGlobal_channel0, &b_baselineDispersionGlobal_channel0);
+     nt->SetBranchAddress("ampMax_channel0", &ampMax_channel0, &b_ampMax_channel0);
+     nt->SetBranchAddress("timeAmpMax_channel0", &timeAmpMax_channel0, &b_timeAmpMax_channel0);
+     nt->SetBranchAddress("constFrac_channel0", &constFrac_channel0, &b_constFrac_channel0);
+     nt->SetBranchAddress("timeConstFrac_channel0", &timeConstFrac_channel0, &b_timeConstFrac_channel0);
+     nt->SetBranchAddress("slopeConstFrac_channel0", &slopeConstFrac_channel0, &b_slopeConstFrac_channel0);
+     nt->SetBranchAddress("chi2ConstFrac_channel0", &chi2ConstFrac_channel0, &b_chi2ConstFrac_channel0);
      nt->SetBranchAddress("waveForm_channel1", &waveForm_channel1, &b_waveForm_channel1);
      nt->SetBranchAddress("baseLine_channel1", &baseLine_channel1, &b_baseLine_channel1);
      nt->SetBranchAddress("baselineDispersion_channel1", &baselineDispersion_channel1, &b_baselineDispersion_channel1);

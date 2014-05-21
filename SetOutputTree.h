@@ -10,6 +10,7 @@ using namespace std;
     int event;
     int run;
     int nPointsInterpolation_output;
+    int adcSciFront;
     float timeBaseLine_output;
 
     vector<float> waveForm_Trigger;
@@ -127,6 +128,7 @@ using namespace std;
       nt->Branch("event",&event,"event/I"); 
       nt->Branch("run",&run,"run/I"); 
       nt->Branch("nPointsInterpolation",&nPointsInterpolation_output,"nPointsInterpolation/I"); 
+      nt->Branch("adcSciFront",&adcSciFront,"adcSciFront/F"); 
       nt->Branch("timeBaseLine",&timeBaseLine_output,"timeBaseLine/F"); 
       nt->Branch("waveForm_Trigger","std::vector<float>",&waveForm_Trigger); 
       nt->Branch("baseLine_Trigger",&baseLine_Trigger,"baseLine_Trigger/F");  
