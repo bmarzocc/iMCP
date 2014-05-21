@@ -436,7 +436,7 @@ int main(int argc, char** argv)
         {
             if(adcBoard[ichAdc] == 1 && adcChannel[ichAdc] == 0)
             {
-                adcSciFront = ichAdc;
+                adcSciFront = int(ichAdc);
                 break;
             }
         }
