@@ -217,6 +217,10 @@ int main(int argc, char** argv)
   unsigned int digiChannel[9216];
   unsigned int digiSampleIndex[9216];
   float digiSampleValue[9216];
+  unsigned int nAdcChannels;
+  unsigned int adcData[40];
+  unsigned int adcBoard[40];
+  unsigned int adcChannel[40];
   
   tntu->SetBranchStatus("*",0);
 
@@ -225,6 +229,11 @@ int main(int argc, char** argv)
   tntu->SetBranchStatus("digiChannel",1);      tntu->SetBranchAddress("digiChannel",digiChannel);
   tntu->SetBranchStatus("digiSampleIndex",1);  tntu->SetBranchAddress("digiSampleIndex",digiSampleIndex);
   tntu->SetBranchStatus("digiSampleValue",1);  tntu->SetBranchAddress("digiSampleValue",digiSampleValue);
+
+  tntu->SetBranchStatus("nAdcChannels",1);     tntu->SetBranchAddress("nAdcChannels",&nAdcChannels);
+  tntu->SetBranchStatus("adcData",1);          tntu->SetBranchAddress("adcData",adcData);
+  tntu->SetBranchStatus("adcBoard",1);         tntu->SetBranchAddress("adcBoard",adcBoard);
+  tntu->SetBranchStatus("adcChannel",1);       tntu->SetBranchAddress("adcChannel",adcChannel);
 
   ///OUTPUT TTREE
   // define file for wf
@@ -239,6 +248,8 @@ int main(int argc, char** argv)
   float tStampMax[nDigiCh]; 
   float bLine[nDigiCh];
   float bLineSig[nDigiCh];
+  int nEle;
+
 
   TTree* nt = new TTree("nt", "nt");
   nt->Branch("ampMax",&ampMax,"ampMax[9]/F"); 
@@ -246,8 +257,9 @@ int main(int argc, char** argv)
   nt->Branch("integral",&integral,"integral[9]/F"); 
   nt->Branch("tStamp",&tStamp,"tStamp[9]/F"); 
   nt->Branch("tStampMax",&tStampMax,"tStampMax[9]/F"); 
-  nt->Branch("bLine",&bLine,"bLine[9]/F"); 
+  nt->Branch("bLine",&bLine,"bLine[9]/F");
   nt->Branch("bLineSig",&bLineSig,"bLineSig[9]/F"); 
+  nt->Branch("nEle",&nEle,"nEle/I"); 
 
   std::cout << " tntu->GetEntries() = " << tntu->GetEntries() << std::endl;
   //  for(int iEntry=4000; iEntry<4050;++iEntry){
@@ -267,6 +279,7 @@ int main(int argc, char** argv)
       tStampMax[iCount] = 0;
       bLine[iCount] = 0;
       bLineSig[iCount] = 0;
+      nEle = -1;
     }
 
     for (int bin=0;bin<nDigiSamples;++bin){
@@ -341,8 +354,20 @@ int main(int argc, char** argv)
 //       hBaseLine[digiChannel[bin]]->SetTitle(h2);
 //       hBaseLine[digiChannel[bin]]->Write();
 
-
     }// loop over bin
+
+    //    std::cout << " nAdcChannels = " << nAdcChannels << std::endl;
+    for(int iCh=0; iCh<nAdcChannels; ++iCh){
+      //           std::cout << " adcData[iCh] =  " << std::endl;
+      if(adcBoard[iCh] == 1 && adcChannel[iCh] == 0){
+	//std::cout << " adcData[iCh] = OK " << std::endl;
+	if(adcData[iCh] < 500) nEle = 0;
+	if(adcData[iCh] > 500 && adcData[iCh] < 1500) nEle = 1;
+	if(adcData[iCh] > 1500 && adcData[iCh] < 2500) nEle = 2;
+	if(adcData[iCh] > 2500 && adcData[iCh] < 3500) nEle = 3;
+      }
+    }
+
     nt->Fill(); 
   }// loop over entries	  
 
@@ -352,7 +377,7 @@ int main(int argc, char** argv)
     integral[iw] = 0;
     tStamp[iw] = 0;
     tStampMax[iw] = 0;
-
+    nEle = -1;
     bLine[iw] = hBaseLine[iw]->GetMean();
     bLineSig[iw] = hBaseLine[iw]->GetRMS();
   }
