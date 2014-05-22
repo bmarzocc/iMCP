@@ -103,5 +103,15 @@ float AmpMax(int t1, int t2, const vector<float>* samples)
     }
     return samples->at(minSample);
 }
+
+float ComputeIntegral(int t1, int t2, const vector<float>* samples)
+{
+    float integral=0;
+    for(int bin=t1; bin<t2; bin++)
+        integral += samples->at(bin);
+    
+    return integral;
+}
+
     
 #endif
