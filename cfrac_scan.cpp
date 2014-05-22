@@ -28,8 +28,12 @@
 
 using namespace std;
 
-float Trigger(int x1, int xm, vector<float> samples, float AmpFraction, int Npar = 3, float sampling = 0.2)
+#define DIGITIZER_SAMPLING_UNIT 0.2 //digitizer samples width (ns)
+
+//---estimate time (ns) with CFD, samples must be a negative signal and baseline subtract
+float TimeConstFrac(int x1, int x2, const vector<float>* samples, float AmpFraction, int Nsamples = 5)
 {
+
     float xx= 0.;
     float xy= 0.;
     float Sx = 0.;
@@ -37,157 +41,44 @@ float Trigger(int x1, int xm, vector<float> samples, float AmpFraction, int Npar
     float Sxx = 0.;
     float Sxy = 0.;
     float Chi2 = 0.;
-
-    for(int n=-(Npar-1)/2; n<=(Npar-1)/2; n++)
+    int minSample=0;
+    int cfSample=0; // first sample over AmpMax*CF 
+    float minValue=0;
+    
+    for(int iSample=x1; iSample<x2; iSample++)
     {
-        if(x1+n<0) continue;
-        xx = (x1+n)*(x1+n)*0.2*0.2;
-        xy = (x1+n)*0.2*(samples.at(x1+n));
-        Sx = Sx + (x1+n)*0.2;
-        Sy = Sy + samples.at(x1+n);
+        if(samples->at(iSample) < samples->at(maxSample)) minSample = iSample;
+    }
+    minValue = samples->at(minSample);
+    for(int iSample=x1; iSample<x2; iSample++)
+    {
+        if(samples->at(iSample) > minValue*AmpFraction) cfSample = iSample;
+    }
+    for(int n=-(Nsample-1)/2; n<=(Nsample-1)/2; n++)
+    {
+        if(cfSample+n<0) continue;
+        xx = (cfSample+n)*(cfSample+n)*0.2*0.2;
+        xy = (cfSample+n)*0.2*(samples->at(cfSample+n));
+        Sx = Sx + (cfSample+n)*0.2;
+        Sy = Sy + samples->at(cfSample+n);
         Sxx = Sxx + xx;
         Sxy = Sxy + xy;
     }
 
-    float Delta = Npar*Sxx - Sx*Sx;
+    float Delta = Nsample*Sxx - Sx*Sx;
     float A = (Sxx*Sy - Sx*Sxy) / Delta;
-    float B = (Npar*Sxy - Sx*Sy) / Delta;
+    float B = (Nsample*Sxy - Sx*Sy) / Delta;
 
     float sigma2 = pow(0.2/sqrt(12)*B,2);
  
-    for(int n=-(Npar-1)/2; n<=(Npar-1)/2; n++)
+    for(int n=-(Nsample-1)/2; n<=(Nsample-1)/2; n++)
     {
-        if(x1+n<0) continue;
-        Chi2 = Chi2 + pow(samples.at(x1+n) - A - B*((x1+n)*0.2),2)/sigma2;
+        if(cfSample+n<0) continue;
+        Chi2 = Chi2 + pow(samples->at(cfSample+n) - A - B*((cfSample+n)*0.2),2)/sigma2;
     } 
     // A+Bx = AmpFraction * amp
-    float interpolation = (samples.at(xm) * AmpFraction - A) / B;
-    return Chi2;
-}
-
-//******************************************************************************
-// main
-
-int main(int argc, char** argv)
-{
-    FILE* input;
-    vector<float> channels[9];
-    vector<int> eventNumber;
-    vector<float> trig[9], B, sigmaB;
-    float *buffer, frac=0;
-    int *BinHeader, isNegative[9], nCh=0, nSize=0, iEvent=0, nEvent=0, c=0;
-    int x1=0;
-    
-    TH1F* float_coinc = new TH1F("difference","difference",2000,-50,50);
-    TGraphErrors* scan = new TGraphErrors();
-    scan->SetMarkerStyle(7);
-    scan->SetMarkerSize(20);
-    scan->SetMarkerColor(kBlue);
-    scan->SetTitle("scan; costant fraction [% ampMax]; Chi^2");//Slope [ADC ch/ns]");
-    TApplication* app = new TApplication("app",0,0);
-    
-    //-----scan loop
-    for(c=20; c<80; c++)
-    {
-        system("ls WaveForms/ > tmp");
-        ifstream infile ("tmp");
-        string file;
-        string path = "WaveForms/";
-        
-        TH1F* B_histo = new TH1F("B_histo"+c,"B_histo",100,0,2);
-        //-----loop on all the Runs
-        while(getline(infile, file))
-        {
-            path = "WaveForms/";
-            path.append(file);
-            if((input = fopen(path.c_str(),"rb")) == NULL)
-            {
-                cout << "input file not found" << endl;
-                return -1;
-            }   
-    
-            frac = c/100.;
-    
-            BinHeader = (int*) malloc (sizeof(int)*10);
-            fread(BinHeader, sizeof(int), 10, input);
-            nSize = BinHeader[0];
-            nCh = BinHeader[1];
-    
-            isNegative[0] = -1;
-            for(int ii = 1; ii < 9; ii++)
-                isNegative[ii] = BinHeader[ii+1];
-
-            fread(&iEvent, sizeof(int),1,input);
-    
-            buffer = (float*) malloc (sizeof(float)*nSize*(nCh+1));
-    
-	        while(fread(buffer, sizeof(float), nSize*(nCh+1), input) == nSize*(nCh+1))
-            {
-    	       eventNumber.push_back(iEvent);
-               for(int iCh=0; iCh<=nCh; iCh++)
-               {
-                   channels[iCh].clear();
-                   for(int iSample=0; iSample<nSize; iSample++)
-                   {
-                       int pos = iCh*nSize + iSample;
-                       channels[iCh].push_back(buffer[pos]);
-              	   }
-                }
-    
-                //-----channels loop (only Russian MCP)
-                for(int iCh=1; iCh<nCh; iCh++)
-                {
-                    //---compute baseline (5ns)
-                    float baseline = 0.;
-            	    for(int iBase=0; iBase<25; iBase++)
-                    	baseline = baseline + channels[iCh].at(iBase);
-        
-            	    baseline = baseline/25;
-
-            	    for(int iSample=0; iSample<nSize; iSample++)
-            	    	channels[iCh].at(iSample) = channels[iCh].at(iSample) - baseline;
-	        	
-	        	    int maxSample = 0;
-	        	    if (isNegative[iCh]<0) 
-	        	    {
-                        for(int iSample=0; iSample<nSize; iSample++)
-                        {
-                            if(channels[iCh].at(iSample)<channels[iCh].at(maxSample)) maxSample=iSample;
-                        }    
-	        	        for (int iSample=maxSample; iSample>0; iSample--)
-	        	        {    
-	        	            //---compute costant fraction time 
-	        	            if(channels[iCh].at(iSample) > frac*channels[iCh].at(maxSample) &&
-	        	               channels[iCh].at(iSample-1) > channels[iCh].at(iSample) &&
-	        	               channels[iCh].at(iSample) > channels[iCh].at(iSample+1))
-	        	            {
-	        	                x1 = iSample;
-	        	                break;
-	        	            }
-	        	        }
-	        	        if(channels[iCh].at(maxSample) < -200)
-                            B_histo->Fill(Trigger(x1, maxSample, channels[iCh], frac, 5));
-      	            }
-                }
-                nEvent++;
-                fread(&iEvent, sizeof(int), 1, input);
-            }
-            fclose(input);
-        }            
-        //B_histo->SetAxisRange(-500,0,"X");
-        B.push_back(B_histo->GetMean());
-        sigmaB.push_back(B_histo->GetRMS()/sqrt(B_histo->GetEntries()));
-        B_histo->DrawClone();
-        delete B_histo;
-    }
-
-    for(int j=0; j<B.size(); j++)
-    {
-        scan->SetPoint(j,j+20,B.at(j)); 
-        scan->SetPointError(j,0,sigmaB.at(j));
-    }
-    scan->Draw("AP");    
-    app->Run();    
+    float interpolation = (samples->at(xm) * AmpFraction - A) / B;
+    return interpolation;
 }
 
 
