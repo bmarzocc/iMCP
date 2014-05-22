@@ -1,4 +1,5 @@
-// g++  -o doAnalysis `root-config --cflags --glibs` doAnalysis
+// g++  -o doAnalysis `root-config --cflags --glibs` doAnalysis.cpp
+// g++  -o doAnalysis doAnalysis.cpp `root-config --cflags --glibs`
 // ./doAnalysis WaveForms_BTF/scan.dat
 
 #include "TApplication.h"
@@ -132,8 +133,8 @@ int main (int argc, char** argv)
 	}
             
 	chain->GetEntry(iEntry);
-	if(evtNumber % 10 == 0){   //---Run<145
-	  //if(evtNumber % 1 == 0){      //---Run>=145
+	//if(evtNumber % 10 == 0){   //---Run<145
+	if(evtNumber % 1 == 0){      //---Run>=145
 
 	  for(int iCh=0; iCh<nAdcChannels; ++iCh){
 	    if(adcBoard[iCh] == 1 && adcChannel[iCh] == 0){
@@ -146,31 +147,33 @@ int main (int argc, char** argv)
 	  
 	  //---Read digitizer samples
 	  for(int iSample=0; iSample<nDigiSamples; ++iSample){
-	    if(digiChannel[iSample] == 3) 
-	      digiCh[digiChannel[iSample]].push_back(-digiSampleValue[iSample]);
-	    else
 	      digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
 	  }
 	  for(int iCh=0; iCh<6; iCh++){
 	    baseline[iCh] = SubtractBaseline(5, 80, &digiCh[iCh]);
+
+            if(digiChannel[iSample] == 3) 
+               for(unsigned int ii = 0; ii < digiCh[iCh].size(); ii++)
+                   digiCh[iCh].at(ii) = -1*digiCh[iCh].at(ii);
+     
 	    hBaseLine[iCh]->Fill(-1.*baseline[iCh]);
 	    timeCF[iCh] = TimeConstFrac(200, 275, &digiCh[iCh], 0.5);
 	    hTimeCF[iCh]->Fill(timeCF[iCh]);
 	  }    
-	  if(AmpMax(200, 275, &digiCh[Ch_ref1]) < -20 && AmpMax(200, 275, &digiCh[Ch_ref2]) < -20 && trig==1){
+	  if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) < -250 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) < -250 && trig==1){
 	    ++tot_tr1;
-	    if(AmpMax(200, 275, &digiCh[Ch_1]) < -20) count[1] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -250) count[1] += 1;
 	    if(baseline[Ch_1] < -20) spare[1] += 1;
-	    if(AmpMax(200, 275, &digiCh[Ch_2]) < -20) count[2] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -250) count[2] += 1;
 	    if(baseline[Ch_2] < -20) spare[2] += 1;
-	    if(AmpMax(200, 275, &digiCh[Ch_3]) < -10) count[3] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -250) count[3] += 1;
 	    if(baseline[Ch_3] < -10) spare[3] = 1;
 	  }
-	  else if(AmpMax(200, 275, &digiCh[Ch_ref1]) >= -20 && AmpMax(200, 275, &digiCh[Ch_ref2]) >= -20 && trig==0){
+	  else if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) >= -250 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) >= -250 && trig==0){
 	    ++tot_tr0;
-	    if(AmpMax(200, 275, &digiCh[Ch_1]) < -20) spare2[1] += 1; 
-	    if(AmpMax(200, 275, &digiCh[Ch_2]) < -20) spare2[2] += 1; 
-	    if(AmpMax(200, 275, &digiCh[Ch_3]) < -10) spare2[3] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -250) spare2[1] += 1; 
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -250) spare2[2] += 1; 
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -250) spare2[3] += 1;
 	  }
 	} // good events
       }//loop over entries
@@ -212,8 +215,7 @@ int main (int argc, char** argv)
 	hBaseLine[Ch_1]->Write();
 	hBaseLine[Ch_2]->Write();
 	hBaseLine[Ch_3]->Write();
-	
-	std::cout << " >>> passa oltre " << std::endl;
+
         chain->Delete();
         //delete chain;
     }
