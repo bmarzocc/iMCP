@@ -213,9 +213,6 @@ int main (int argc, char** argv)
 	hBaseLine[Ch_2]->Write();
 	hBaseLine[Ch_3]->Write();
 	
-	if(nScan == 2) return 10;
-
-
 	std::cout << " >>> passa oltre " << std::endl;
         chain->Delete();
         //delete chain;
