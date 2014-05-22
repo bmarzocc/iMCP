@@ -52,7 +52,8 @@ int main (int argc, char** argv)
             chain->Add(id_str);
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << id << endl;
         }
-        log >> HV1 >> HV2 >> HV3;
+        //log >> HV1 >> HV2 >> HV3; //---config1
+        log >> HV3 >> HV1 >> HV2; //---config2
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
             for(int iCh=0; iCh<9; iCh++)
@@ -61,8 +62,8 @@ int main (int argc, char** argv)
             }
             
             chain->GetEntry(iEntry);
-            if(evtNumber % 10 == 0)   //---Run<145
-            //if(evtNumber % 1 == 0)      //---Run>=145
+            //if(evtNumber % 10 == 0)   //---Run<145
+            if(evtNumber % 1 == 0)      //---Run>=145
             {
                 trig = 1;
                 for(int iCh=0; iCh<nAdcChannels; iCh++)
