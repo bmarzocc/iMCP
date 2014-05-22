@@ -62,8 +62,8 @@ int main (int argc, char** argv)
             }
             
             chain->GetEntry(iEntry);
-            //if(evtNumber % 10 == 0)   //---Run<145
-            if(evtNumber % 1 == 0)      //---Run>=145
+            if(evtNumber % 10 == 0)   //---Run<145
+            //if(evtNumber % 1 == 0)      //---Run>=145
             {
                 trig = 1;
                 for(int iCh=0; iCh<nAdcChannels; iCh++)
