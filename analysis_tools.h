@@ -34,7 +34,7 @@ float SubtractBaseline(int tb1, int tb2, vector<float>* samples)
         if(samples->at(iSample) < samples->at(minSample)) 
             minSample = iSample;
     }
-    baseline = baseline/(tb2-tb1);
+    baseline = baseline/(float)(tb2-tb1);
     //---subtract baseline
     for(int iSample=0; iSample<samples->size(); iSample++)
     {
@@ -109,9 +109,8 @@ float ComputeIntegral(int t1, int t2, const vector<float>* samples)
     float integral=0;
     for(int bin=t1; bin<t2; bin++)
         integral += samples->at(bin);
-    
+
     return integral;
 }
-
     
 #endif
