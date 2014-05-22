@@ -46,7 +46,7 @@ int main (int argc, char** argv)
     float timeCF[9];
     float baseline[9];
     int count[5]={0,0,0,0,0}, spare[5]={0,0,0,0,0}, spare2[5]={0,0,0,0,0};
-    int tot_tr1=0, tot_tr0, trig=0;
+    int tot_tr1=0, tot_tr0=0, trig=0;
     
     for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
     {
@@ -55,14 +55,10 @@ int main (int argc, char** argv)
             digiCh[iCh].clear();
         }
         
-        if(iEntry % 1 != 0) 
-        {
-            chain->GetEntry(iEntry);
-        }
-        else 
+        chain->GetEntry(iEntry);
+        if(evtNumber % 10 == 0)
         {
             trig = 1;
-            chain->GetEntry(iEntry);
             for(int iCh=0; iCh<nAdcChannels; iCh++)
             {
                 if(adcData[iCh] > 1500 && adcBoard[iCh] == 1 && adcChannel[iCh] == 0) trig=2;
