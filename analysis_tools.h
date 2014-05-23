@@ -54,8 +54,8 @@ float TimeConstFrac(int t1, int t2, const vector<float>* samples, float AmpFract
     float Sxx = 0.;
     float Sxy = 0.;
     float Chi2 = 0.;
-    int minSample=0;
-    int cfSample=0; // first sample over AmpMax*CF 
+    int minSample=t1;
+    int cfSample=t1; // first sample over AmpMax*CF 
     float minValue=0;
     
     for(int iSample=t1; iSample<t2; iSample++)
@@ -63,9 +63,13 @@ float TimeConstFrac(int t1, int t2, const vector<float>* samples, float AmpFract
         if(samples->at(iSample) < samples->at(minSample)) minSample = iSample;
     }
     minValue = samples->at(minSample);
-    for(int iSample=t1; iSample<t2; iSample++)
+    for(int iSample=minSample; iSample>t1; iSample--)
     {
-        if(samples->at(iSample) > minValue*AmpFraction) cfSample = iSample;
+        if(samples->at(iSample) > minValue*AmpFraction) 
+        {
+            cfSample = iSample;
+            break;
+        }
     }
     for(int n=-(Nsamples-1)/2; n<=(Nsamples-1)/2; n++)
     {
