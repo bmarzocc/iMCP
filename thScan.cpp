@@ -74,7 +74,7 @@ int main (int argc, char** argv)
     pcMCP.at(Ch_2) = tokens_name.at(8);
     pcMCP.at(Ch_3) = tokens_name.at(10);
     
-    int nFiles=1, iRun=0;
+    int nFiles=1, iRun=0, goodEvt=0;
     //---usefull histos
     TH1F* chHistoBase[18];
     TH1F* chHistoSignal[18];
@@ -118,15 +118,20 @@ int main (int argc, char** argv)
         } 
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
+            //---always clear the std::vector !!!
             for(int iCh=0; iCh<9; iCh++)
             {
                 digiCh[iCh].clear();
             }
-            
+            //---Read the entry
             chain->GetEntry(iEntry);
-            if(evtNumber % 10 == 0)   //---Run<145
-            //if(evtNumber % 1 == 0)      //---Run>=145
+            //---DAQ bug workaround
+            if(iRun < 145) goodEvt = 10;
+            else goodEvt = 1;
+            if(evtNumber % goodEvt == 0)   
             {
+                //---Read SciFront ADC value and set the e- multiplicity 
+                //---(default = 1)
                 trig = 1;
                 for(int iCh=0; iCh<nAdcChannels; iCh++)
                 {
@@ -146,11 +151,14 @@ int main (int argc, char** argv)
                             digiCh[iCh].at(iSample) = -digiCh[iCh].at(iSample);
                     }
                     timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
-                    int t1 = (int)timeCF[iCh]/0.2 - 3;
-                    int t2 = (int)timeCF[iCh]/0.2 + 17;
-                    if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024)
-                        chHistoSignal[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
-                        chHistoBase[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+                    int t1 = (int)(timeCF[iCh]/0.2) - 3;
+                    int t2 = (int)(timeCF[iCh]/0.2) + 17;
+                    //---Fill the signal integral histo only if the e- multiplicity is 1
+                    if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024 && trig==1)
+                    {
+                            chHistoSignal[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+                    }
+                    chHistoBase[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
                     timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
                 }
             }

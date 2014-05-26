@@ -83,7 +83,7 @@ void scanAll(TString dataFolder, TString dataType) {
   float xl=0.;
   float xh=15;
   TString xtit = "Absorber Thickness (X_{0})"; 
-  if (dataType=="pla") {
+  if (dataType=="Scan") {
     xl=1200; 
     xh=3000.;
     xtit = "Bias voltage (V)"; 
@@ -97,7 +97,7 @@ void scanAll(TString dataFolder, TString dataType) {
   TH1F *hf = (TH1F*)gPad->DrawFrame(xl,0.,xh,1.2); 
   hf->GetXaxis()->SetTitle(xtit);   
   hf->GetYaxis()->SetTitle("Efficiency"); 
-  for (int i=0;i<nFile-1;i++){
+  for (int i=0;i<nFile;i++){
     g[i]->Draw("P"); 
 
   leg->Draw("same");

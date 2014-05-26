@@ -144,12 +144,7 @@ int main (int argc, char** argv)
                 if(trig > 1) continue; 
                 //---Read digitizer samples
                 for(int iSample=0; iSample<nDigiSamples; iSample++)
-                {
-                    if(digiChannel[iSample] == 3) 
-                        digiCh[digiChannel[iSample]].push_back(-digiSampleValue[iSample]);
-                    else
-                        digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
-                }
+                    digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
                 //---loop over MPC's channels
                 for(int iCh=0; iCh<6; iCh++)
                 {
@@ -157,11 +152,11 @@ int main (int argc, char** argv)
                     if(iCh == 3)
                     {
                         for(int iSample=0; iSample<digiCh[iCh].size(); iSample++)
-                            digiCh[iCh].at(iSample) = -digiCh[iCh].at(iSample);
+                            digiCh[iCh].at(iSample) = -1.*digiCh[iCh].at(iSample);
                     }
                     timeCF[iCh]=TimeConstFrac(47, 500, &digiCh[iCh], 0.5);
-                    int t1 = (int)timeCF[iCh]/0.2 - 3;
-                    int t2 = (int)timeCF[iCh]/0.2 + 17;
+                    int t1 = (int)(timeCF[iCh]/0.2) - 3;
+                    int t2 = (int)(timeCF[iCh]/0.2) + 17;
                     intBase[iCh] = ComputeIntegral(26, 46, &digiCh[iCh]);
                     if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024)
                         intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
