@@ -133,8 +133,8 @@ int main (int argc, char** argv)
 	}
             
 	chain->GetEntry(iEntry);
-	//if(evtNumber % 10 == 0){   //---Run<145
-	if(evtNumber % 1 == 0){      //---Run>=145
+	if(evtNumber % 10 == 0){   //---Run<145
+	//if(evtNumber % 1 == 0){      //---Run>=145
 
 	  for(int iCh=0; iCh<nAdcChannels; ++iCh){
 	    if(adcBoard[iCh] == 1 && adcChannel[iCh] == 0){
@@ -149,10 +149,10 @@ int main (int argc, char** argv)
 	  for(int iSample=0; iSample<nDigiSamples; ++iSample){
 	      digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
 	  }
-	  for(int iCh=0; iCh<6; iCh++){
+	  for(int iCh=0; iCh<6; iCh++)
+	  {
 	    baseline[iCh] = SubtractBaseline(5, 80, &digiCh[iCh]);
-
-            if(digiChannel[iSample] == 3) 
+            if(iCh == 3) 
                for(unsigned int ii = 0; ii < digiCh[iCh].size(); ii++)
                    digiCh[iCh].at(ii) = -1*digiCh[iCh].at(ii);
      
@@ -160,20 +160,20 @@ int main (int argc, char** argv)
 	    timeCF[iCh] = TimeConstFrac(200, 275, &digiCh[iCh], 0.5);
 	    hTimeCF[iCh]->Fill(timeCF[iCh]);
 	  }    
-	  if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) < -250 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) < -250 && trig==1){
+	  if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) < -130 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) < -130 && trig==1){
 	    ++tot_tr1;
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -250) count[1] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -130) count[1] += 1;
 	    if(baseline[Ch_1] < -20) spare[1] += 1;
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -250) count[2] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -130) count[2] += 1;
 	    if(baseline[Ch_2] < -20) spare[2] += 1;
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -250) count[3] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -130) count[3] += 1;
 	    if(baseline[Ch_3] < -10) spare[3] = 1;
 	  }
-	  else if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) >= -250 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) >= -250 && trig==0){
+	  else if(ComputeIntegral(200, 275, &digiCh[Ch_ref1]) >= -130 && ComputeIntegral(200, 275, &digiCh[Ch_ref2]) >= -130 && trig==0){
 	    ++tot_tr0;
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -250) spare2[1] += 1; 
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -250) spare2[2] += 1; 
-	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -250) spare2[3] += 1;
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_1]) < -130) spare2[1] += 1; 
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_2]) < -130) spare2[2] += 1; 
+	    if(ComputeIntegral(200, 275, &digiCh[Ch_3]) < -130) spare2[3] += 1;
 	  }
 	} // good events
       }//loop over entries

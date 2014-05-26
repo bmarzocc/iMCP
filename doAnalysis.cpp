@@ -16,7 +16,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdint.h>
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -37,7 +36,7 @@
 
 int main (int argc, char** argv)
 {  
-    // get run number
+//-------Read data config files-----------------------------------------------
     std::string inputName = std::string(argv[1]);
     char split_char = '/';
     std::vector<std::string> tokens;
@@ -75,7 +74,21 @@ int main (int argc, char** argv)
     pcMCP.at(Ch_3) = tokens_name.at(10);
     pcMCP.at(Ch_3).erase(pcMCP.at(Ch_3).size()-4, pcMCP.at(Ch_3).size()-1);
     
+//--------Definition----------------------------------------------------------
     int nFiles=1;
+    //---coincidence tree
+    TFile* outROOT = TFile::Open("outTiming.root","recreate");  
+    outROOT->cd();
+    TTree* outTree = new TTree("coicidence_tree", "coicidence_tree");
+    outTree->SetDirectory(0);
+    float coinc_Ch1=0, coinc_Ch2=0, coinc_Ch3=0, coinc_ref=0;
+    outTree->Branch("coinc_Ch1",&coinc_Ch1,"coinc_Ch1/F");
+    outTree->Branch("coinc_Ch2",&coinc_Ch2,"coinc_Ch2/F");
+    outTree->Branch("coinc_Ch3",&coinc_Ch3,"coinc_Ch3/F");
+    outTree->Branch("coinc_ref",&coinc_ref,"coinc_ref/F");
+    TBranch* b_Ch1 = (TBranch*) outTree->GetBranch("coinc_Ch1");
+    TBranch* b_Ch2 = (TBranch*) outTree->GetBranch("coinc_Ch2");
+    TBranch* b_Ch3 = (TBranch*) outTree->GetBranch("coinc_Ch3");
     //---open output files    
     std::ofstream data1(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").c_str());
     std::ofstream data2(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").c_str());
@@ -84,6 +97,7 @@ int main (int argc, char** argv)
     ifstream log (argv[1], ios::in);
     while(log >> nFiles)
     {
+        //-----Run dependend definition
         vector<float> digiCh[9];
         float timeCF[9];
         float baseline[9];
@@ -91,8 +105,10 @@ int main (int argc, char** argv)
         int count[5]={0,0,0,0,0}, spare[5]={0,0,0,0,0}, spare2[5]={0,0,0,0,0};
         int tot_tr1=0, tot_tr0=0, trig=0;
         int HV1=0, HV2=0, HV3=0, id=0, goodEvt=1;
+        //---Chain
         TChain* chain = new TChain("eventRawData");
         InitTree(chain);
+        //-----Read raw data tree-----------------------------------------------
         for(int iFiles=0; iFiles<nFiles; iFiles++)
         {
             log >> id;
@@ -101,19 +117,24 @@ int main (int argc, char** argv)
             chain->Add(id_str);
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << id << endl;
         }
-        log >> HV1 >> HV2 >> HV3; 
+        log >> HV1 >> HV2 >> HV3;
+        //-----Data loop-------------------------------------------------------- 
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
+            //---always clear the std::vector !!!
             for(int iCh=0; iCh<9; iCh++)
             {
                 digiCh[iCh].clear();
             }
-            
+            //---Read the entry
             chain->GetEntry(iEntry);
+            //---DAQ bug workaround
             if(id < 145) goodEvt = 10;
             else goodEvt = 1;
-            if(evtNumber % goodEvt == 0)   //---Run<145
+            if(evtNumber % goodEvt == 0)   
             {
+                //---Read SciFront ADC value and set the e- multiplicity 
+                //---(default = 1)
                 trig = 1;
                 for(int iCh=0; iCh<nAdcChannels; iCh++)
                 {
@@ -129,26 +150,55 @@ int main (int argc, char** argv)
                     else
                         digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
                 }
+                //---loop over MPC's channels
                 for(int iCh=0; iCh<6; iCh++)
                 {
                     baseline[iCh]=SubtractBaseline(5, 25, &digiCh[iCh]);
-                    timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
+                    if(iCh == 3)
+                    {
+                        for(int iSample=0; iSample<digiCh[iCh].size(); iSample++)
+                            digiCh[iCh].at(iSample) = -digiCh[iCh].at(iSample);
+                    }
+                    timeCF[iCh]=TimeConstFrac(47, 500, &digiCh[iCh], 0.5);
                     int t1 = (int)timeCF[iCh]/0.2 - 3;
                     int t2 = (int)timeCF[iCh]/0.2 + 17;
+                    intBase[iCh] = ComputeIntegral(26, 46, &digiCh[iCh]);
                     if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024)
                         intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
-                        intBase[iCh] = ComputeIntegral(26, 46, &digiCh[iCh]);
-                }    
+                }
+                //---Multiplicity == 1 --> compute efficency, fake rate and timing
                 if(intSignal[Ch_ref1] < -150 && intSignal[Ch_ref2] < -150 && trig==1) 
                 {
+                    //---reset
+                    coinc_Ch1 = -100;
+                    coinc_Ch2 = -100;
+                    coinc_Ch3 = -100;
                     tot_tr1++;
-                    if(intSignal[Ch_1] < -150) count[1]=count[1]+1;
-                    if(intBase[Ch_1] < -150) spare[1]=spare[1]+1;
-                    if(intSignal[Ch_2] < -70) count[2]=count[2]+1;
-                    if(intBase[Ch_2] < -70) spare[2]=spare[2]+1;
-                    if(intSignal[Ch_3] < -150) count[3]=count[3]+1;
-                    if(intBase[Ch_3] < -150) spare[3]=spare[3]+1;
+                    if(intSignal[Ch_1] < -150) 
+                    {
+                        count[1]=count[1]+1;
+                        coinc_Ch1 = timeCF[0] - timeCF[Ch_1];
+                    }
+                    if(intBase[Ch_1] < -150) 
+                        spare[1]=spare[1]+1;
+                    if(intSignal[Ch_2] < -70)
+                    {
+                        count[2]=count[2]+1;
+                        coinc_Ch2 = timeCF[0] - timeCF[Ch_2];
+                    }
+                    if(intBase[Ch_2] < -70) 
+                        spare[2]=spare[2]+1;
+                    if(intSignal[Ch_3] < -150)
+                    {
+                        count[3]=count[3]+1;
+                        coinc_Ch3 = timeCF[0] - timeCF[Ch_3];
+                    }
+                    if(intBase[Ch_3] < -150) 
+                        spare[3]=spare[3]+1;
+            	    //---Fill output tree
+	                outTree->Fill();    
                 }
+                //---Multiplicity == 0 --> compute fake rate
                 else if(intSignal[Ch_ref1] >= -150 && intSignal[Ch_ref2] >= -150 && trig==0) 
                 {
                     tot_tr0++;
@@ -158,6 +208,7 @@ int main (int argc, char** argv)
                 }
             }
         }
+        //-----Print Infos------------------------------------------------------
         std::cout << "--------------------------" << std::endl;
         std::cout << "number of events:  " << chain->GetEntries()/10 << std::endl;
         std::cout << "Double:  " << tot_tr1 << std::endl;
@@ -181,16 +232,21 @@ int main (int argc, char** argv)
         std::cout << "Ch_3 eff:    " << eff3 << std::endl;
         std::cout << "Ch_3 e_err:  " << TMath::Sqrt((eff3*(1-eff3))/tot_tr1) << std::endl;
         std::cout << "--------------------------" << std::endl;
-    
+        //---Fill output files
 	    data1 << HV1 << " " <<  eff1 << " " << 0 << " " << TMath::Sqrt((eff1*(1-eff1))/tot_tr1) << std::endl;
 	    data2 << HV2 << " " <<  eff2 << " " << 0 << " " << TMath::Sqrt((eff2*(1-eff2))/tot_tr1) << std::endl;
 	    data3 << HV3 << " " << eff3 << " " << 0 << " " << TMath::Sqrt((eff3*(1-eff3))/tot_tr1) << std::endl;
-
+        //---Get ready for next run
         chain->Delete();
     }
+    //-----close everything-----------------------------------------------------
     data1.close();
     data2.close();
     data3.close();
+    outTree->Write();
+    outROOT->Close();
+    
+//---------Done-----------------------------------------------------------------
 }
 
         
