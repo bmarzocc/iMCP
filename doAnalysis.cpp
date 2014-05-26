@@ -59,7 +59,7 @@ int main (int argc, char** argv)
     std::vector<std::string> nameMCP;
     nameMCP.push_back("MiB1");
     nameMCP.push_back("MiB2");
-    if(argc > 2) nameMCP.at(2) = "Roma1";
+    if(argc > 3) nameMCP.at(2) = "Roma1";
     nameMCP.push_back("ScB");
     nameMCP.push_back("Planacon");
     nameMCP.push_back("MiB3");
@@ -74,6 +74,16 @@ int main (int argc, char** argv)
     pcMCP.at(Ch_3) = tokens_name.at(10);
     pcMCP.at(Ch_3).erase(pcMCP.at(Ch_3).size()-4, pcMCP.at(Ch_3).size()-1);
     
+    //---treshold setup Scan-dependent
+    const int iScan = atoi(argv[2])-1;
+    float Ch_th[6]={0,0,0,0,0,0};
+    Ch_th[Ch_ref1] = th_MiB1[iScan];
+    Ch_th[Ch_ref2] = th_Roma2[iScan];
+    Ch_th[Ch_1] = th_MiB2[iScan];
+    if(argc > 3) Ch_th[Ch_1] = th_Roma1[iScan];
+    Ch_th[Ch_2] = th_MiB3[iScan];
+    Ch_th[Ch_3] = th_Planacon[iScan];
+    
 //--------Definition----------------------------------------------------------
     int nFiles=1;
     //---coincidence tree
@@ -86,9 +96,6 @@ int main (int argc, char** argv)
     outTree->Branch("coinc_Ch2",&coinc_Ch2,"coinc_Ch2/F");
     outTree->Branch("coinc_Ch3",&coinc_Ch3,"coinc_Ch3/F");
     outTree->Branch("coinc_ref",&coinc_ref,"coinc_ref/F");
-    TBranch* b_Ch1 = (TBranch*) outTree->GetBranch("coinc_Ch1");
-    TBranch* b_Ch2 = (TBranch*) outTree->GetBranch("coinc_Ch2");
-    TBranch* b_Ch3 = (TBranch*) outTree->GetBranch("coinc_Ch3");
     //---open output files    
     std::ofstream data1(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").c_str());
     std::ofstream data2(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").c_str());
@@ -160,46 +167,48 @@ int main (int argc, char** argv)
                     intBase[iCh] = ComputeIntegral(26, 46, &digiCh[iCh]);
                     if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024)
                         intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
+                    else
+                        intSignal[iCh] = 100;
                 }
                 //---Multiplicity == 1 --> compute efficency, fake rate and timing
-                if(intSignal[Ch_ref1] < -150 && intSignal[Ch_ref2] < -150 && trig==1) 
+                if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig==1) 
                 {
                     //---reset
                     coinc_Ch1 = -100;
                     coinc_Ch2 = -100;
                     coinc_Ch3 = -100;
                     tot_tr1++;
-                    if(intSignal[Ch_1] < -150) 
+                    if(intSignal[Ch_1] < Ch_th[Ch_1]) 
                     {
                         count[1]=count[1]+1;
                         coinc_Ch1 = timeCF[0] - timeCF[Ch_1];
                     }
-                    if(intBase[Ch_1] < -150) 
+                    if(intBase[Ch_1] < Ch_th[Ch_1]) 
                         spare[1]=spare[1]+1;
-                    if(intSignal[Ch_2] < -70)
+                    if(intSignal[Ch_2] < Ch_th[Ch_2])
                     {
                         count[2]=count[2]+1;
                         coinc_Ch2 = timeCF[0] - timeCF[Ch_2];
                     }
-                    if(intBase[Ch_2] < -70) 
+                    if(intBase[Ch_2] < Ch_th[Ch_2]) 
                         spare[2]=spare[2]+1;
-                    if(intSignal[Ch_3] < -150)
+                    if(intSignal[Ch_3] < Ch_th[Ch_3])
                     {
                         count[3]=count[3]+1;
                         coinc_Ch3 = timeCF[0] - timeCF[Ch_3];
                     }
-                    if(intBase[Ch_3] < -150) 
+                    if(intBase[Ch_3] < Ch_th[Ch_3]) 
                         spare[3]=spare[3]+1;
             	    //---Fill output tree
 	                outTree->Fill();    
                 }
                 //---Multiplicity == 0 --> compute fake rate
-                else if(intSignal[Ch_ref1] >= -150 && intSignal[Ch_ref2] >= -150 && trig==0) 
+                if(intSignal[Ch_ref1] >= Ch_th[Ch_ref1] && intSignal[Ch_ref2] >= Ch_th[Ch_ref2] && trig==0) 
                 {
                     tot_tr0++;
-                    if(intSignal[Ch_1] < -150) spare2[1]=spare2[1]+1; 
-                    if(intSignal[Ch_1] < -70) spare2[2]=spare2[2]+1; 
-                    if(intSignal[Ch_1] < -150) spare2[3]=spare2[3]+1;
+                    if(intSignal[Ch_1] < Ch_th[Ch_1]) spare2[1]=spare2[1]+1; 
+                    if(intSignal[Ch_2] < Ch_th[Ch_2]) spare2[2]=spare2[2]+1; 
+                    if(intSignal[Ch_3] < Ch_th[Ch_3]) spare2[3]=spare2[3]+1;
                 }
             }
         }

@@ -22,6 +22,14 @@ using namespace std;
 
 #define DIGITIZER_SAMPLING_UNIT 0.2 //digitizer samples width (ns)
 
+//---Integral treshold Ch_n[iScan]
+float th_MiB1[4]={-175.,0.,0.,-200.};
+float th_MiB2[4]={-160.,0.,0.,-225.};
+float th_MiB3[4]={-250.,0.,0.,-270.};
+float th_Roma1[4]={0.,0.,0.,0.};
+float th_Roma2[4]={-115.,0.,0.,-200};
+float th_Planacon[4]={-70.,-70.,-70.,-70.};
+
 //---estimate the baseline in a given range and then subtract it from the signal 
 float SubtractBaseline(int tb1, int tb2, vector<float>* samples)
 {
