@@ -76,10 +76,20 @@ int main (int argc, char** argv)
     
     int nFiles=1, iRun=0, goodEvt=0;
     //---usefull histos
-    TH1F* chHistoBase[18];
-    TH1F* chHistoSignal[18];
+    TH1F* chHistoBase[9];
+    TH1F* chHistoSignal[9];
     TH1F* timeDiffHisto[9];
- 
+            //---histos initialization
+        for(int iCh=0; iCh<9; iCh++)
+        {
+            char h1[30], h2[30], h3[30];
+            sprintf(h1, "histoBase%d_%d", iCh, iRun);
+            sprintf(h2, "histoSignal%d_%d", iCh, iRun);
+            sprintf(h3, "histoTime%d_%d", iCh, iRun);
+            chHistoBase[iCh] = new TH1F(h1,h1,2000,-1000,1000);
+            chHistoSignal[iCh] = new TH1F(h2, h2,30000,-30000,1000);
+            timeDiffHisto[iCh] = new TH1F(h3, h3,4000,-10,10);
+        } 
     TFile* out = TFile::Open("outHistos.root","recreate");  
     out->cd();
     
@@ -105,17 +115,7 @@ int main (int argc, char** argv)
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
         }
         log >> HV1 >> HV2 >> HV3;
-        //---histos initialization
-        for(int iCh=0; iCh<18; iCh++)
-        {
-            char h1[30], h2[30], h3[30];
-            sprintf(h1, "histoBase%d_%d", iCh, iRun);
-            sprintf(h2, "histoSignal%d_%d", iCh, iRun);
-            sprintf(h3, "histoTime%d_%d", iCh, iRun);
-            chHistoBase[iCh] = new TH1F(h1,h1,200,-1000,1000);
-            chHistoSignal[iCh] = new TH1F(h2, h2,2100,-20000,1000);
-            timeDiffHisto[iCh] = new TH1F(h3, h3,4000,-10,10);
-        } 
+        //if(iRun != 68) continue; 
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
             //---always clear the std::vector !!!
@@ -164,6 +164,7 @@ int main (int argc, char** argv)
             }
         }  	
         chain->Delete();
+      }
         chHistoBase[Ch_1]->Write();
         chHistoBase[Ch_2]->Write();
         chHistoBase[Ch_3]->Write();
@@ -179,7 +180,7 @@ int main (int argc, char** argv)
         timeDiffHisto[Ch_3]->Write();
    	    timeDiffHisto[Ch_ref1]->Write();
         timeDiffHisto[Ch_ref2]->Write();
-    }
+    //}
 
 }
 
