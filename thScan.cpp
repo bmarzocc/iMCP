@@ -1,3 +1,6 @@
+//g++  -o thScan `root-config --cflags --glibs` thScan.cpp
+// ./thScan WaveForms_BTF/scan.dat
+
 #include "TApplication.h"
 #include "TH1F.h"
 #include "TROOT.h"
@@ -64,7 +67,8 @@ int main (int argc, char** argv)
     nameMCP.push_back("ScB");
     nameMCP.push_back("Planacon");
     nameMCP.push_back("MiB3");
-    nameMCP.push_back("RomaX");
+    nameMCP.push_back("Roma2");
+    if(tokens_name.at(0) == "Scan3") nameMCP.at(1) = "Roma1";
 
     std::vector<std::string> pcMCP;                                     
     for(unsigned int ii=0; ii<nameMCP.size(); ++ii) pcMCP.push_back("");
@@ -73,64 +77,84 @@ int main (int argc, char** argv)
     pcMCP.at(Ch_1) = tokens_name.at(6);
     pcMCP.at(Ch_2) = tokens_name.at(8);
     pcMCP.at(Ch_3) = tokens_name.at(10);
+
+
+    TFile* out = TFile::Open((tokens_name.at(0)+"_outHistos.root").c_str(),"recreate");  
+    out->cd();
     
     int nFiles=1, iRun=0, goodEvt=0;
+    int iScan = 0;
+    
     //---usefull histos
-    TH1F* chHistoBase[9];
-    TH1F* chHistoSignal[9];
+    TH1F* chHistoBase_All[9];
+    TH1F* chHistoSignal_All[9];
     TH1F* timeDiffHisto[9];
-            //---histos initialization
-        for(int iCh=0; iCh<9; iCh++)
-        {
-            char h1[30], h2[30], h3[30];
-            sprintf(h1, "histoBase%d_%d", iCh, iRun);
-            sprintf(h2, "histoSignal%d_%d", iCh, iRun);
-            sprintf(h3, "histoTime%d_%d", iCh, iRun);
-            chHistoBase[iCh] = new TH1F(h1,h1,2000,-1000,1000);
-            chHistoSignal[iCh] = new TH1F(h2, h2,30000,-30000,1000);
-            timeDiffHisto[iCh] = new TH1F(h3, h3,4000,-10,10);
-        } 
-    TFile* out = TFile::Open("outHistos.root","recreate");  
-    out->cd();
+    //---histos initialization
+    for(int iCh=0; iCh<6; ++iCh)
+      {
+	char h1[30], h2[30], h3[30];
+	sprintf(h1, "histoBase_All_Ch%d", iCh);
+	sprintf(h2, "histoSignal_All_Ch%d", iCh);
+	sprintf(h3, "histoTime_Ch%d", iCh);
+	chHistoBase_All[iCh] = new TH1F(h1,h1,30000,-30000,1000);
+	chHistoSignal_All[iCh] = new TH1F(h2, h2,30000,-30000,1000);
+	timeDiffHisto[iCh] = new TH1F(h3, h3,4000,-10,10);
+      } 
+
     
     //---do runs loop
     ifstream log (argv[1], ios::in);
     while(log >> nFiles)
     {
+      ++iScan;
         vector<float> digiCh[9];
         float timeCF[9];
         float baseline[9];
         int count[5]={0,0,0,0,0}, spare[5]={0,0,0,0,0}, spare2[5]={0,0,0,0,0};
         int tot_tr1=0, tot_tr0=0, trig=0;
         int HV1=0, HV2=0, HV3=0;
+
+	TH1F* chHistoBase_Ch[9];
+	TH1F* chHistoSignal_Ch[9];
+	char ha[10];
+	for (int iiw=0;iiw<9;++iiw){
+	  sprintf (ha,"histoBase_Ch%d_Scan_%d",iiw, iScan);
+	  chHistoBase_Ch[iiw] = new TH1F( ha, "", 30000,-30000,1000);
+	  chHistoBase_Ch[iiw] -> SetXTitle ("Integral BaseLine Ch(ADC)");
+
+	  sprintf (ha,"histoSignal_Ch%d_Scan_%d",iiw, iScan);
+	  chHistoSignal_Ch[iiw] = new TH1F( ha, "", 30000,-30000,1000);
+	  chHistoSignal_Ch[iiw] -> SetXTitle ("Integral Signal Ch(ADC)");
+	}
+
         //---data chain
         TChain* chain = new TChain("eventRawData");
         InitTree(chain);
-        for(int iFiles=0; iFiles<nFiles; iFiles++)
-        {
-            log >> iRun;
-            char iRun_str[30];
-            sprintf(iRun_str, "WaveForms_BTF/run_IMCP_%d_*.root", iRun);
-            chain->Add(iRun_str);
-            cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
-        }
+        for(int iFiles=0; iFiles<nFiles; iFiles++){
+	  log >> iRun;
+	  char iRun_str[30];
+	  sprintf(iRun_str, "../DATA/run_IMCP_%d_*.root", iRun);
+	  chain->Add(iRun_str);
+	  cout << "Reading:  ../DATA/run_IMCP_" << iRun << endl;
+	}
         log >> HV1 >> HV2 >> HV3;
-        //if(iRun != 68) continue; 
-        for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
-        {
-            //---always clear the std::vector !!!
-            for(int iCh=0; iCh<9; iCh++)
-            {
-                digiCh[iCh].clear();
-            }
+    
+        for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++) {
+
+	  //---always clear the std::vector !!!
+	  for(int iCh=0; iCh<9; iCh++){
+	    digiCh[iCh].clear();
+	  }
+
             //---Read the entry
             chain->GetEntry(iEntry);
+
             //---DAQ bug workaround
             if(iRun < 145) goodEvt = 10;
             else goodEvt = 1;
-            if(evtNumber % goodEvt == 0)   
-            {
-                //---Read SciFront ADC value and set the e- multiplicity 
+
+            if(evtNumber % goodEvt == 0){
+	        //---Read SciFront ADC value and set the e- multiplicity 
                 //---(default = 1)
                 trig = 1;
                 for(int iCh=0; iCh<nAdcChannels; iCh++)
@@ -139,49 +163,51 @@ int main (int argc, char** argv)
                     if(adcData[iCh] < 500 && adcBoard[iCh] == 1 && adcChannel[iCh] == 0) trig=0;
                 }
                 if(trig > 1) continue; 
-                //---Read digitizer samples
-                for(int iSample=0; iSample<nDigiSamples; iSample++)
-                        digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
-                for(int iCh=0; iCh<6; iCh++)
-                {
-                    baseline[iCh]=SubtractBaseline(5, 25, &digiCh[iCh]);
-                    if(iCh == 3)
-                    {
-                        for(int iSample=0; iSample<digiCh[iCh].size(); iSample++)
-                            digiCh[iCh].at(iSample) = -digiCh[iCh].at(iSample);
-                    }
-                    timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
-                    int t1 = (int)(timeCF[iCh]/0.2) - 3;
-                    int t2 = (int)(timeCF[iCh]/0.2) + 17;
-                    //---Fill the signal integral histo only if the e- multiplicity is 1
-                    if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024 && trig==1)
-                    {
-                            chHistoSignal[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
-                    }
-                    chHistoBase[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
-                    timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
-                }
-            }
-        }  	
-        chain->Delete();
-      }
-        chHistoBase[Ch_1]->Write();
-        chHistoBase[Ch_2]->Write();
-        chHistoBase[Ch_3]->Write();
-   	    chHistoBase[Ch_ref1]->Write();
-        chHistoBase[Ch_ref2]->Write();
-   	    chHistoSignal[Ch_1]->Write();
-        chHistoSignal[Ch_2]->Write();
-        chHistoSignal[Ch_3]->Write();
-   	    chHistoSignal[Ch_ref1]->Write();
-        chHistoSignal[Ch_ref2]->Write();
-        timeDiffHisto[Ch_1]->Write();
-        timeDiffHisto[Ch_2]->Write();
-        timeDiffHisto[Ch_3]->Write();
-   	    timeDiffHisto[Ch_ref1]->Write();
-        timeDiffHisto[Ch_ref2]->Write();
-    //}
 
+                //---Read digitizer samples
+                for(int iSample=0; iSample<nDigiSamples; iSample++){
+		  if(digiChannel[iSample] == 3)
+		    digiCh[digiChannel[iSample]].push_back(-digiSampleValue[iSample]);
+		  else
+		  digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
+		}
+                for(int iCh=0; iCh<6; iCh++){
+		  baseline[iCh] = SubtractBaseline(5, 25, &digiCh[iCh]);
+		  if(trig == 0) {
+		    chHistoBase_All[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+		    chHistoBase_Ch[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+		  }
+		  timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
+		  timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
+
+		  int t1 = (int)(timeCF[iCh]/0.2) - 3;
+		  int t2 = (int)(timeCF[iCh]/0.2) + 17;
+		  //---Fill the signal integral histo only if the e- multiplicity is 1
+		  if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024 && trig == 1)
+                    {
+		      chHistoSignal_All[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+		      chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+                    }
+		}// loop over Ch
+	      }// good Event
+	  } // loop over entries
+
+	for(int iw=0; iw<6; ++iw){
+	  if(iw == 2) continue;
+	  chHistoBase_Ch[iw]->Write();
+	  chHistoSignal_Ch[iw]->Write();
+	}
+        chain->Delete();
+    }
+ 
+    for(int iw=0; iw<6; ++iw){
+      if(iw == 2) continue;
+      chHistoBase_All[iw]->Write();
+      chHistoSignal_All[iw]->Write();
+      timeDiffHisto[iw]->Write();
+   }
+    out->Close();
+    return 0;
 }
 
         
