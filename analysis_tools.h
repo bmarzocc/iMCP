@@ -22,13 +22,60 @@ using namespace std;
 
 #define DIGITIZER_SAMPLING_UNIT 0.2 //digitizer samples width (ns)
 
-//---Integral treshold Ch_n[iScan]
-float th_MiB1[4]={-175.,0.,0.,-200.};
-float th_MiB2[4]={-160.,0.,0.,-225.};
-float th_MiB3[4]={-250.,0.,0.,-270.};
-float th_Roma1[4]={0.,0.,0.,0.};
-float th_Roma2[4]={-115.,0.,0.,-200};
-float th_Planacon[4]={-70.,-70.,-70.,-70.};
+//---Integral treshold th[iScan][Ch_n] Roma1 is on Ch=2
+float _th[4][6];
+
+//------------------------------------------------------------------------------
+void init()
+{
+    _th[0][0] = -110;
+    _th[1][0] = -110;
+    _th[2][0] = -110;
+    _th[3][0] = -110;
+
+    _th[0][1] = -130;
+    _th[1][1] = -130;
+    _th[2][1] = -130;
+    _th[3][1] = -130;
+
+    _th[0][2] = -0;
+    _th[1][2] = -0;
+    _th[2][2] = -0;
+    _th[3][2] = -0;
+    
+    _th[0][3] = -55;
+    _th[1][3] = -55;
+    _th[2][3] = -55;
+    _th[3][3] = -55;
+
+    _th[0][4] = -140;
+    _th[1][4] = -140;
+    _th[2][4] = -140;
+    _th[3][4] = -140;
+
+    _th[0][5] = -70;
+    _th[1][5] = -70;
+    _th[2][5] = -70;
+    _th[3][5] = -45;
+}
+
+//------------------------------------------------------------------------------
+void DFT_lowCut(vector<float>* samples, float f_cut)
+{
+    float* a = (float*)malloc(sizeof(float)*samples->size());
+    float* b = (float*)malloc(sizeof(float)*samples->size());
+    for (int k=0; k<samples->size(); k++) 
+    { 
+        a[k] = 0;
+        b[k] = 0; 
+        for (int t=0; t<samples->size(); t++) 
+        { 
+            float angle = 2 * M_PI * t * k / samples->size(); 
+            a[k] += samples->at(t) * cos(angle); 
+            b[k] += samples->at(t) * sin(angle); 
+        } 
+    }
+}
 
 //---estimate the baseline in a given range and then subtract it from the signal 
 float SubtractBaseline(int tb1, int tb2, vector<float>* samples)
