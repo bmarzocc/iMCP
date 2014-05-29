@@ -56,10 +56,10 @@ int main (int argc, char** argv)
     const int Ch_2 = atoi((tokens_name.at(7)).c_str());
     const int Ch_3 = atoi((tokens_name.at(9)).c_str());
 
-    std::vector<std::string> nameMCP;
+    std::vector<TString> nameMCP;
     nameMCP.push_back("MiB1");
     nameMCP.push_back("MiB2");
-    if(argc > 3) nameMCP.at(2) = "Roma1";
+    if(argc > 3) nameMCP.at(1) = "Roma1";
     nameMCP.push_back("ScB");
     nameMCP.push_back("Planacon");
     nameMCP.push_back("MiB3");
@@ -88,31 +88,38 @@ int main (int argc, char** argv)
 //--------Definition----------------------------------------------------------
     int nFiles=1;
     //---coinciRunence tree
-    TFile* outROOT = TFile::Open("outTiming.root","recreate");  
+    TString outName = "outAnalysis_"+tokens_name.at(0)+".root";
+    TFile* outROOT = TFile::Open(outName.Data(),"recreate");  
     outROOT->cd();
     TTree* outTree = new TTree("analysis_tree", "analysis_tree");
     outTree->SetDirectory(0);
-    float coinc_Ch1=0, coinc_Ch2=0, coinc_Ch3=0, coinc_ref=0;
-    float amp_max_Ch1=0, amp_max_Ch2=0, amp_max_Ch3=0, amp_max_ref=0;
-    float charge_Ch1=0, charge_Ch2=0, charge_Ch3=0, charge_ref=0;
-    int sci_front_adc=0;
-    outTree->Branch("coinc_Ch1",&coinc_Ch1,"coinc_Ch1/F");
-    outTree->Branch("coinc_Ch2",&coinc_Ch2,"coinc_Ch2/F");
-    outTree->Branch("coinc_Ch3",&coinc_Ch3,"coinc_Ch3/F");
-    outTree->Branch("coinc_ref",&coinc_ref,"coinc_ref/F");
-    outTree->Branch("amp_max_Ch1",&amp_max_Ch1,"amp_max_Ch1/F");
-    outTree->Branch("amp_max_Ch2",&amp_max_Ch2,"amp_max_Ch2/F");
-    outTree->Branch("amp_max_Ch3",&amp_max_Ch3,"amp_max_Ch3/F");
-    outTree->Branch("amp_max_ref",&amp_max_ref,"amp_max_ref/F");
-    outTree->Branch("charge_Ch1",&charge_Ch1,"charge_Ch1/F");
-    outTree->Branch("charge_Ch2",&charge_Ch2,"charge_Ch2/F");
-    outTree->Branch("charge_Ch3",&charge_Ch3,"charge_Ch3/F");
-    outTree->Branch("charge_ref",&charge_ref,"charge_ref/F");
+    float coinc_Ch1=0, coinc_Ch2=0, coinc_Ch3=0, coinc_ref1=0;
+    float amp_max_Ch1=0, amp_max_Ch2=0, amp_max_Ch3=0, amp_max_ref1=0;
+    float charge_Ch1=0, charge_Ch2=0, charge_Ch3=0, charge_ref1=0;
+    float baseline_Ch1=0, baseline_Ch2=0, baseline_Ch3=0, baseline_ref1=0;
+    int sci_front_adc=0, run_id=0;
+    outTree->Branch("coinc_"+nameMCP.at(Ch_1),&coinc_Ch1,"coinc_"+nameMCP.at(Ch_1)+"/F");
+    outTree->Branch("coinc_"+nameMCP.at(Ch_2),&coinc_Ch2,"coinc_"+nameMCP.at(Ch_2)+"/F");
+    outTree->Branch("coinc_"+nameMCP.at(Ch_3),&coinc_Ch3,"coinc_"+nameMCP.at(Ch_3)+"/F");
+    outTree->Branch("coinc_"+nameMCP.at(Ch_ref1),&coinc_ref1,"coinc_"+nameMCP.at(Ch_ref1)+"/F");
+    outTree->Branch("amp_max_"+nameMCP.at(Ch_1),&amp_max_Ch1,"amp_max_"+nameMCP.at(Ch_1)+"/F");
+    outTree->Branch("amp_max_"+nameMCP.at(Ch_2),&amp_max_Ch2,"amp_max_"+nameMCP.at(Ch_2)+"/F");
+    outTree->Branch("amp_max_"+nameMCP.at(Ch_3),&amp_max_Ch3,"amp_max_"+nameMCP.at(Ch_3)+"/F");
+    outTree->Branch("amp_max_"+nameMCP.at(Ch_ref1),&amp_max_ref1,"amp_max_"+nameMCP.at(Ch_ref1)+"/F");
+    outTree->Branch("charge_"+nameMCP.at(Ch_1),&charge_Ch1,"charge_"+nameMCP.at(Ch_1)+"/F");
+    outTree->Branch("charge_"+nameMCP.at(Ch_2),&charge_Ch2,"charge_"+nameMCP.at(Ch_2)+"/F");
+    outTree->Branch("charge_"+nameMCP.at(Ch_3),&charge_Ch3,"charge_"+nameMCP.at(Ch_3)+"/F");
+    outTree->Branch("charge_"+nameMCP.at(Ch_ref1),&charge_ref1,"charge_"+nameMCP.at(Ch_ref1)+"/F");
+    outTree->Branch("baseline_"+nameMCP.at(Ch_1),&baseline_Ch1,"baseline_"+nameMCP.at(Ch_1)+"/F");
+    outTree->Branch("baseline_"+nameMCP.at(Ch_2),&baseline_Ch2,"baseline_"+nameMCP.at(Ch_2)+"/F");
+    outTree->Branch("baseline_"+nameMCP.at(Ch_3),&baseline_Ch3,"baseline_"+nameMCP.at(Ch_3)+"/F");
+    outTree->Branch("baseline_"+nameMCP.at(Ch_ref1),&baseline_ref1,"baseline_"+nameMCP.at(Ch_ref1)+"/F");
     outTree->Branch("sci_front_adc",&sci_front_adc,"sci_front_adc/I");
+    outTree->Branch("run_id",&run_id,"run_id/I");
     //---open output files    
-    std::ofstream data1(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").c_str());
-    std::ofstream data2(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").c_str());
-	std::ofstream data3(("Data_plateau/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_3)+"_pc_"+pcMCP.at(Ch_3)+".dat").c_str());
+    std::ofstream data1(("analized_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").Data());
+    std::ofstream data2(("analized_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").Data());
+	std::ofstream data3(("analized_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_3)+"_pc_"+pcMCP.at(Ch_3)+".dat").Data());
     //---do runs loop
     ifstream log (argv[1], ios::in);
     while(log >> nFiles)
@@ -185,65 +192,64 @@ int main (int argc, char** argv)
                     intBase[iCh] = ComputeIntegral(26, 46, &digiCh[iCh]);
                     if(t1 > 50 && t1 < 1024 && t2 > 50 && t2 < 1024)
                     {
-                        intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
                         ampMax[iCh] = AmpMax(t1, t2, &digiCh[iCh]);
+                        intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
                     }
                     else
                     {
-                        intSignal[iCh] = 100;
                         ampMax[iCh] = AmpMax(0, 1024, &digiCh[iCh]);
+                        intSignal[iCh] = ComputeIntegral(50, 70, &digiCh[iCh]);
                     }
                 }
                 //---Multiplicity == 1 --> compute efficency, fake rate and timing
-                if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && trig == 1) 
+                if(intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig == 1) 
                 {
                     //---reset
                     coinc_Ch1 = -100;
                     coinc_Ch2 = -100;
                     coinc_Ch3 = -100;
-                    amp_max_Ch1 = 500;
-                    amp_max_Ch2 = 500;
-                    amp_max_Ch3 = 500;
-                    charge_Ch1 = 1000;
-                    charge_Ch2 = 1000;
-                    charge_Ch3 = 1000;
                     //---trigger count
                     tot_tr1++;
                     //---Ch_1
-                    if(intSignal[Ch_1] < Ch_th[Ch_1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2]) 
+                    if(intSignal[Ch_1] < Ch_th[Ch_1] && intSignal[Ch_ref1] < Ch_th[Ch_ref1]) 
                     {
                         count[1]=count[1]+1;
                         coinc_Ch1 = timeCF[Ch_ref1] - timeCF[Ch_1];
                     }   
-                    if(intBase[Ch_1] < Ch_th[Ch_1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2]) 
+                    if(intBase[Ch_1] < Ch_th[Ch_1] && intSignal[Ch_ref1] < Ch_th[Ch_ref1]) 
                         spare[1]=spare[1]+1;
                     amp_max_Ch1 = ampMax[Ch_1];
                     charge_Ch1 = intSignal[Ch_1];
+                    baseline_Ch1 = intBase[Ch_1];
                     //---Ch_2
-                    if(intSignal[Ch_2] < Ch_th[Ch_2] && intSignal[Ch_ref2] < Ch_th[Ch_ref2])
+                    if(intSignal[Ch_2] < Ch_th[Ch_2] && intSignal[Ch_ref1] < Ch_th[Ch_ref1])
                     {
                         count[2]=count[2]+1;
                         coinc_Ch2 = timeCF[Ch_ref1] - timeCF[Ch_2];
                     }
-                    if(intBase[Ch_2] < Ch_th[Ch_2] && intSignal[Ch_ref2] < Ch_th[Ch_ref2]) 
+                    if(intBase[Ch_2] < Ch_th[Ch_2] && intSignal[Ch_ref1] < Ch_th[Ch_ref1]) 
                         spare[2]=spare[2]+1;
                     amp_max_Ch2 = ampMax[Ch_2];
                     charge_Ch2 = intSignal[Ch_2];
+                    baseline_Ch2 = intBase[Ch_2];
                     //---Ch_3
-                    if(intSignal[Ch_3] < Ch_th[Ch_3] && intSignal[Ch_ref2] < Ch_th[Ch_ref2])
+                    if(intSignal[Ch_3] < Ch_th[Ch_3] && intSignal[Ch_ref1] < Ch_th[Ch_ref1])
                     {
                         count[3]=count[3]+1;
                         coinc_Ch3 = timeCF[Ch_ref1] - timeCF[Ch_3];
                     }
-                    if(intBase[Ch_3] < Ch_th[Ch_3] && intSignal[Ch_ref2] < Ch_th[Ch_ref2]) 
+                    if(intBase[Ch_3] < Ch_th[Ch_3] && intSignal[Ch_ref1] < Ch_th[Ch_ref1]) 
                         spare[3]=spare[3]+1;
                     amp_max_Ch3 = ampMax[Ch_3];
-                    charge_Ch3 = intSignal[Ch_3];    
+                    charge_Ch3 = intSignal[Ch_3];
+                    baseline_Ch3 = intBase[Ch_3];    
                     //---ref MCP
-                    coinc_ref = timeCF[Ch_ref1] - timeCF[Ch_ref2];
-                    amp_max_ref = ampMax[Ch_ref2];
-                    charge_ref = intSignal[Ch_ref2];
+                    coinc_ref1 = timeCF[Ch_ref1] - timeCF[Ch_ref2];
+                    amp_max_ref1 = ampMax[Ch_ref1];
+                    charge_ref1 = intSignal[Ch_ref1];
+                    baseline_ref1 = intBase[Ch_ref1];
             	    //---Fill output tree
+            	    run_id = iRun;
 	                outTree->Fill();    
                 }
                 //---Multiplicity == 0 --> compute fake rate
