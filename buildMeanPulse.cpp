@@ -34,6 +34,7 @@
 
 #include "analysis_tools.h"
 #include "InitTree_BTF.h"
+#include "histoFunc.h""
 
 
 int main (int argc, char** argv)
