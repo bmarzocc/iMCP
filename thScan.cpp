@@ -114,10 +114,15 @@ int main (int argc, char** argv)
         int tot_tr1=0, tot_tr0=0, trig=0;
         int HV1=0, HV2=0, HV3=0;
 
+	TH1F* chHistoWF_Ch[9];
 	TH1F* chHistoBase_Ch[9];
 	TH1F* chHistoSignal_Ch[9];
 	char ha[10];
 	for (int iiw=0;iiw<9;++iiw){
+	  sprintf (ha,"histoWF_Ch%d_Scan_%d",iiw, iScan);
+	  chHistoWF_Ch[iiw] = new TH1F( ha, "", 1024,0.,1024);
+	  chHistoWF_Ch[iiw]->SetXTitle("Waveform");
+
 	  sprintf (ha,"histoBase_Ch%d_Scan_%d",iiw, iScan);
 	  chHistoBase_Ch[iiw] = new TH1F( ha, "", 30000,-30000,1000);
 	  chHistoBase_Ch[iiw] -> SetXTitle ("Integral BaseLine Ch(ADC)");
@@ -166,27 +171,39 @@ int main (int argc, char** argv)
 
                 //---Read digitizer samples
                 for(int iSample=0; iSample<nDigiSamples; iSample++){
-		  if(digiChannel[iSample] == 3)
+		  if(digiChannel[iSample] == 3){
 		    digiCh[digiChannel[iSample]].push_back(-digiSampleValue[iSample]);
-		  else
-		  digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
+		    chHistoWF_Ch[digiChannel[iSample]]->SetBinContent(digiSampleIndex[iSample]+1, -digiSampleValue[iSample]);
+		  }
+		  else{
+		    digiCh[digiChannel[iSample]].push_back(digiSampleValue[iSample]);
+		    chHistoWF_Ch[digiChannel[iSample]]->SetBinContent(digiSampleIndex[iSample]+1, digiSampleValue[iSample]);
+		  }
+
 		}
                 for(int iCh=0; iCh<6; iCh++){
 		  baseline[iCh] = SubtractBaseline(5, 25, &digiCh[iCh]);
 		  if(trig == 0) {
-		    chHistoBase_All[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
-		    chHistoBase_Ch[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+ 		    chHistoBase_All[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+ 		    chHistoBase_Ch[iCh]->Fill(ComputeIntegral(26, 46, &digiCh[iCh]));
+// 		    chHistoBase_All[iCh]->Fill(ComputeIntegral(0, 150, &digiCh[iCh]));
+// 		    chHistoBase_Ch[iCh]->Fill(ComputeIntegral(0, 150, &digiCh[iCh]));
 		  }
 		  timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
 		  timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
+
+// 		  if(trig == 1){
+// 		    chHistoSignal_All[iCh]->Fill(ComputeIntegral(150, 300, &digiCh[iCh]));      
+// 		    chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(150, 300, &digiCh[iCh]));       
+// 		  }
 
 		  int t1 = (int)(timeCF[iCh]/0.2) - 3;
 		  int t2 = (int)(timeCF[iCh]/0.2) + 17;
 		  //---Fill the signal integral histo only if the e- multiplicity is 1
 		  if(t1 > 30 && t1 < 1024 && t2 > 30 && t2 < 1024 && trig == 1)
                     {
-		      chHistoSignal_All[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
-		      chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+ 		      chHistoSignal_All[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+ 		      chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
                     }
 		}// loop over Ch
 	      }// good Event
@@ -196,6 +213,7 @@ int main (int argc, char** argv)
 	  if(iw == 2) continue;
 	  chHistoBase_Ch[iw]->Write();
 	  chHistoSignal_Ch[iw]->Write();
+	  chHistoWF_Ch[iw]->Write();
 	}
         chain->Delete();
     }
