@@ -1,17 +1,19 @@
-#include "TApplication.h"
-#include "TH1F.h"
+/*************************************************************
+
+    compile with --> c++ -o buildMeanPulse buildMeanPulse.cpp `root-config --cflags --glibs`
+    run with --> ./buildMeanPulse Scan_*.dat Scan_number
+
+*************************************************************/
 #include "TROOT.h"
-#include "TCanvas.h"
-#include "TLegend.h"
-#include "TH1F.h"
-#include "TString.h"
+#include "TFile.h"
 #include "TSystem.h"
 #include "TStyle.h"
 #include "TChain.h"
-#include "TFile.h"
-#include "TGraphErrors.h"
 #include "TF1.h"
+#include "TH1F.h"
+#include "TProfile.h"
 #include "TMath.h"
+#include "TString.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -40,7 +42,7 @@
 int main (int argc, char** argv)
 {  
     gROOT->ProcessLine("#include <vector>");
-//-------get run number---------------------------------------------------------
+    //-------get run number---------------------------------------------------------
     std::string inputName = std::string(argv[1]);
     char split_char = '/';
     std::vector<std::string> tokens;
@@ -180,7 +182,7 @@ int main (int argc, char** argv)
                     else
                     {
                         intSignal[iCh] = 100;
-                        ampMax[iCh] = AmpMax(0, 1024, &digiCh[iCh]);
+                        ampMax[iCh] = AmpMax(0, 500, &digiCh[iCh]);
                     }
                 }
                 //---Multiplicity == 1 --> compute mean pulse
@@ -190,8 +192,7 @@ int main (int argc, char** argv)
                     for(int iSample=0; iSample<1024; iSample++)
                     {
                         tot_tr1++;
-                        if(intSignal[Ch_1] < Ch_th[Ch_1] /*&& 
-                           timeCF[Ch_1]-timeCF[Ch_1] > 0 && timeCF[Ch_1]-timeCF[Ch_ref1] < 2*/) 
+                        if(intSignal[Ch_1] < Ch_th[Ch_1]*2) 
                         {
                             MS_Ch_samples[Ch_1] = digiCh[Ch_1].at(iSample)/ampMax[Ch_1];
                             MS_Ch_times[Ch_1] = iSample*0.2 - timeCF[Ch_ref1];
@@ -201,8 +202,7 @@ int main (int argc, char** argv)
                             MS_Ch_samples[Ch_1] = 0;
                             MS_Ch_times[Ch_1] = -1000;
                         }
-                        if(intSignal[Ch_2] < Ch_th[Ch_2] /*&& 
-                           timeCF[Ch_1]-timeCF[Ch_2] > 0 && timeCF[Ch_1]-timeCF[Ch_ref1] < 2*/)
+                        if(intSignal[Ch_2] < Ch_th[Ch_2]*2)
                         {
                             MS_Ch_samples[Ch_2] = digiCh[Ch_2].at(iSample)/ampMax[Ch_2];
                             MS_Ch_times[Ch_2] = iSample*0.2 - timeCF[Ch_ref1];
@@ -212,8 +212,7 @@ int main (int argc, char** argv)
                             MS_Ch_samples[Ch_2] = 0;
                             MS_Ch_times[Ch_2] = -1000;
                         }
-                        if(intSignal[Ch_3] < Ch_th[Ch_3]*2 /*&& 
-                           timeCF[Ch_1]-timeCF[Ch_3] > 0 && timeCF[Ch_1]-timeCF[Ch_ref1] < 2*/)
+                        if(intSignal[Ch_3] < Ch_th[Ch_3]*2)
                         {
                             MS_Ch_samples[Ch_3] = digiCh[Ch_3].at(iSample)/ampMax[Ch_3];
                             MS_Ch_times[Ch_3] = iSample*0.2 - timeCF[Ch_ref1];
@@ -237,6 +236,31 @@ int main (int argc, char** argv)
     }
     outTree->Write();
     out->Close();
+    
+    //--------Save Waves------------------------------------------------------------
+    int Nbins = (MS_HIGH_TIME - MS_LOW_TIME) / MS_SAMPLING_UNIT;
+    //---Get Mean Pulse
+    TFile* in = TFile::Open("meanPulses.root","r");
+    TTree* inTree = (TTree*)in->Get("MeanPulsesTree");
+    //---function tree
+    char out_name[50];
+    sprintf(out_name, "Scan%d_MS_func.root", atoi(argv[2]));
+    TFile* outWave = TFile::Open(out_name,"recreate");
+    outWave->cd();
+    TH1F* histosMS[6];
+    for(int iCh=0; iCh<6; iCh++)
+    {
+        char histoMS_name[20];
+        sprintf(histoMS_name, "MS_fitfunc_Ch%d", iCh);
+        TProfile* pr = new TProfile(histoMS_name, histoMS_name, Nbins, MS_LOW_TIME, MS_HIGH_TIME); 
+        char draw_string[100], cuts[100];
+        sprintf(draw_string, "MS_Ch%d_samples:MS_Ch%d_times>>MS_fitfunc_Ch%d", iCh, iCh, iCh);
+        sprintf(cuts, "MS_Ch%d_times > %d || MS_Ch%d_times < %d", iCh, (int)MS_LOW_TIME, iCh, (int)MS_HIGH_TIME);
+        inTree->Draw(draw_string, cuts);
+        histosMS[iCh] = (TH1F*)pr;
+        histosMS[iCh]->Write();
+    }
+    outWave->Close();
 }
 
         
