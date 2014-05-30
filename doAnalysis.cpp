@@ -1,9 +1,9 @@
-/*************************************************************
+/*******************************************************************************
 
     compile with --> c++ -o doAnalysis doAnalysis.cpp `root-config --cflags --glibs`
     run with --> ./doAnalysis Scan_*.dat Scan_number
 
-*************************************************************/
+*******************************************************************************/
 #include <cstdio>
 #include <cstdlib>
 #include <stdint.h>
@@ -90,7 +90,6 @@ int main (int argc, char** argv)
     Ch_th[Ch_ref1] = _th[iScan][Ch_ref1];
     Ch_th[Ch_ref2] = _th[iScan][Ch_ref2];
     Ch_th[Ch_1] = _th[iScan][Ch_1];
-    if(argc > 3) Ch_th[Ch_1] = _th[iScan][2];
     Ch_th[Ch_2] = _th[iScan][Ch_2];
     Ch_th[Ch_3] = _th[iScan][Ch_3];
     
@@ -170,7 +169,7 @@ int main (int argc, char** argv)
         {
             log >> iRun;
             char iRun_str[40];
-            sprintf(iRun_str, "WaveForms_BTF/run_IMCP_%d_*.root", iRun);
+	        sprintf(iRun_str, "WaveForms_BTF/run_IMCP_%d_*.root", iRun);
             chain->Add(iRun_str);
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
         }
@@ -238,7 +237,7 @@ int main (int argc, char** argv)
                     coinc_Ch2 = -100;
                     coinc_Ch3 = -100;
                     //---trigger count
-                    tot_tr1++;
+		            tot_tr1++;
                     //---Ch_1
                     if(intSignal[Ch_1] < Ch_th[Ch_1]) 
                     {
@@ -254,6 +253,7 @@ int main (int argc, char** argv)
                     amp_max_Ch1 = ampMax[Ch_1];
                     charge_Ch1 = intSignal[Ch_1];
                     baseline_Ch1 = intBase[Ch_1];
+
                     //---Ch_2
                     if(intSignal[Ch_2] < Ch_th[Ch_2])
                     {
@@ -269,6 +269,7 @@ int main (int argc, char** argv)
                     amp_max_Ch2 = ampMax[Ch_2];
                     charge_Ch2 = intSignal[Ch_2];
                     baseline_Ch2 = intBase[Ch_2];
+
                     //---Ch_3
                     if(intSignal[Ch_3] < Ch_th[Ch_3])
                     {
@@ -283,6 +284,7 @@ int main (int argc, char** argv)
                     amp_max_Ch3 = ampMax[Ch_3];
                     charge_Ch3 = intSignal[Ch_3];
                     baseline_Ch3 = intBase[Ch_3];    
+
                     //---ref MCP
                         for(int iSample=0; iSample<digiCh[Ch_ref1].size(); iSample++)
                             digiChHistos[Ch_ref1]->SetBinContent(digiChHistos[Ch_ref1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
