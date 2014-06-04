@@ -78,6 +78,16 @@ int main (int argc, char** argv)
     pcMCP.at(Ch_2) = tokens_name.at(8);
     pcMCP.at(Ch_3) = tokens_name.at(10);
 
+    //---treshold setup Scan-dependent 
+    init();
+    const int iScanTh = atoi(argv[2])-1;
+    float Ch_th[6]={0,0,0,0,0,0};
+    Ch_th[Ch_ref1] = _th[iScanTh][Ch_ref1];
+    Ch_th[Ch_ref2] = _th[iScanTh][Ch_ref2];
+    Ch_th[Ch_1] = _th[iScanTh][Ch_1];
+    Ch_th[Ch_2] = _th[iScanTh][Ch_2];
+    Ch_th[Ch_3] = _th[iScanTh][Ch_3];
+
 
     TFile* out = TFile::Open((tokens_name.at(0)+"_outHistos.root").c_str(),"recreate");  
     out->cd();
@@ -89,6 +99,7 @@ int main (int argc, char** argv)
     TH1F* chHistoBase_All[9];
     TH1F* chHistoSignal_All[9];
     TH1F* timeDiffHisto[9];
+    TH1F* timeDiffHisto_Double = new TH1F("timeDiffHisto_Double", "timeDiffHisto_Double",5000,-10,10);
     //---histos initialization
     for(int iCh=0; iCh<6; ++iCh)
       {
@@ -98,7 +109,7 @@ int main (int argc, char** argv)
 	sprintf(h3, "histoTime_Ch%d", iCh);
 	chHistoBase_All[iCh] = new TH1F(h1,h1,30000,-30000,1000);
 	chHistoSignal_All[iCh] = new TH1F(h2, h2,30000,-30000,1000);
-	timeDiffHisto[iCh] = new TH1F(h3, h3,4000,-10,10);
+	timeDiffHisto[iCh] = new TH1F(h3, h3,5000,-100,100);
       } 
 
     
@@ -110,6 +121,7 @@ int main (int argc, char** argv)
         vector<float> digiCh[9];
         float timeCF[9];
         float baseline[9];
+	float intSignal[9];
         int count[5]={0,0,0,0,0}, spare[5]={0,0,0,0,0}, spare2[5]={0,0,0,0,0};
         int tot_tr1=0, tot_tr0=0, trig=0;
         int HV1=0, HV2=0, HV3=0;
@@ -117,6 +129,10 @@ int main (int argc, char** argv)
 	TH1F* chHistoWF_Ch[9];
 	TH1F* chHistoBase_Ch[9];
 	TH1F* chHistoSignal_Ch[9];
+	TH1F* timeDiffHisto_Triple_Ch1 = new TH1F(Form("timeDiffHisto_Triple_Ch1_Scan%d",iScan), "", 5000,-100,100);
+	TH1F* timeDiffHisto_Triple_Ch2 = new TH1F(Form("timeDiffHisto_Triple_Ch2_Scan%d",iScan), "", 5000,-100,100);
+	TH1F* timeDiffHisto_Triple_Ch3 = new TH1F(Form("timeDiffHisto_Triple_Ch3_Scan%d",iScan), "", 5000,-100,100);
+
 	char ha[10];
 	for (int iiw=0;iiw<9;++iiw){
 	  sprintf (ha,"histoWF_Ch%d_Scan_%d",iiw, iScan);
@@ -190,12 +206,8 @@ int main (int argc, char** argv)
 // 		    chHistoBase_Ch[iCh]->Fill(ComputeIntegral(0, 150, &digiCh[iCh]));
 		  }
 		  timeCF[iCh]=TimeConstFrac(30, 500, &digiCh[iCh], 0.5);
-		  timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
-
-// 		  if(trig == 1){
-// 		    chHistoSignal_All[iCh]->Fill(ComputeIntegral(150, 300, &digiCh[iCh]));      
-// 		    chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(150, 300, &digiCh[iCh]));       
-// 		  }
+		  //		  timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2-timeCF[0]*0.2); 
+		  timeDiffHisto[iCh]->Fill(timeCF[iCh]*0.2); 
 
 		  int t1 = (int)(timeCF[iCh]/0.2) - 3;
 		  int t2 = (int)(timeCF[iCh]/0.2) + 17;
@@ -204,9 +216,21 @@ int main (int argc, char** argv)
                     {
  		      chHistoSignal_All[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
  		      chHistoSignal_Ch[iCh]->Fill(ComputeIntegral(t1, t2, &digiCh[iCh]));
+		      intSignal[iCh] = ComputeIntegral(t1, t2, &digiCh[iCh]);
                     }
+		  else intSignal[iCh] = ComputeIntegral(50, 70, &digiCh[iCh]);
 		}// loop over Ch
-	      }// good Event
+	    }// good Event
+	    //---Multiplicity == 1 --> compute efficency, fake rate and timing                                                                          
+	    if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig == 1){
+	      float tDiff = (timeCF[Ch_ref1] - timeCF[Ch_ref2])*0.2;
+	      float tMean = (timeCF[Ch_ref1] + timeCF[Ch_ref2])*0.1;
+	      timeDiffHisto_Double->Fill(tDiff);
+	      timeDiffHisto_Triple_Ch1->Fill(tMean - (timeCF[Ch_1]*0.2));
+	      timeDiffHisto_Triple_Ch2->Fill(tMean - (timeCF[Ch_2]*0.2));
+	      timeDiffHisto_Triple_Ch3->Fill(tMean - (timeCF[Ch_3]*0.2));
+	    }
+
 	  } // loop over entries
 
 	for(int iw=0; iw<6; ++iw){
@@ -215,6 +239,9 @@ int main (int argc, char** argv)
 	  chHistoSignal_Ch[iw]->Write();
 	  chHistoWF_Ch[iw]->Write();
 	}
+	timeDiffHisto_Triple_Ch1->Write();
+	timeDiffHisto_Triple_Ch2->Write();
+	timeDiffHisto_Triple_Ch3->Write();
         chain->Delete();
     }
  
@@ -224,6 +251,7 @@ int main (int argc, char** argv)
       chHistoSignal_All[iw]->Write();
       timeDiffHisto[iw]->Write();
    }
+    timeDiffHisto_Double->Write();
     out->Close();
     return 0;
 }
