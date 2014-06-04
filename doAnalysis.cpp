@@ -44,7 +44,7 @@
 //*******MAIN*******************************************************************
 int main (int argc, char** argv)
 {  
-    TApplication* app = new TApplication("app",0,0);
+//    TApplication* app = new TApplication("app",0,0);
 //-------Read data config files-----------------------------------------------
     std::string inputName = std::string(argv[1]);
     char split_char = '/';
@@ -100,51 +100,30 @@ int main (int argc, char** argv)
     TH1F* MS_histos[6];
     TH1F* digiChHistos[6];
     histoFunc* waves[6];
-    float MS_dil[6];
+    //---MS times: cf, t1->.1*ampmax (low), t2->.1*ampmax (high)
+    float MS_cf[6], MS_t1[6], MS_t2[6];
+    //---meaningfull waveforms times
+    TH1F* MS_cf_times = (TH1F*)inWave->Get("MS_cf_times");
+    TH1F* MS_t1_times = (TH1F*)inWave->Get("MS_t1_times");
+    TH1F* MS_t2_times = (TH1F*)inWave->Get("MS_t2_times");
     for(int iCh=0; iCh<6; iCh++)
     {
         char tmp_name[20];
         sprintf(tmp_name, "MS_fitfunc_Ch%d", iCh);
         MS_histos[iCh] = (TH1F*)inWave->Get(tmp_name);
         waves[iCh] = new histoFunc(MS_histos[iCh]);
-        digiChHistos[iCh] = new TH1F("histo_Ch"+(TString)iCh,"histo_Ch"+(TString)iCh,750,-50,100);
-        /*
-        vector<float> tmp_digi;
-        tmp_digi.clear();
-        for(int bin=1; bin<=MS_histos[iCh]->GetNbinsX(); bin++)
-            tmp_digi.push_back(-MS_histos[iCh]->GetBinContent(bin));
-        MS_dil[iCh] = TimeConstFrac(0, 450, &tmp_digi, 1, 0.1) -
-                      TimeConstFrac(0, 450, &tmp_digi, 0.5, 0.1);        
-        */
+        sprintf(tmp_name, "histo_Ch%d", iCh);
+        digiChHistos[iCh] = new TH1F(tmp_name, tmp_name, 750, -50, 100);
+        MS_cf[iCh]=MS_cf_times->GetBinContent(iCh+1);
+        MS_t1[iCh]=MS_t1_times->GetBinContent(iCh+1);
+        MS_t2[iCh]=MS_t2_times->GetBinContent(iCh+1);
     }    
-    //---coinciRunence tree
+    //---output tree
     TFile* outROOT = TFile::Open((TString)"outAnalysis_"+tokens_name.at(0)+".root","recreate");  
     outROOT->cd();
     TTree* outTree = new TTree("analysis_tree", "analysis_tree");
     outTree->SetDirectory(0);
-    float coinc_Ch1=0, coinc_Ch2=0, coinc_Ch3=0, coinc_ref1=0;
-    float amp_max_Ch1=0, amp_max_Ch2=0, amp_max_Ch3=0, amp_max_ref1=0;
-    float charge_Ch1=0, charge_Ch2=0, charge_Ch3=0, charge_ref1=0;
-    float baseline_Ch1=0, baseline_Ch2=0, baseline_Ch3=0, baseline_ref1=0;
-    int sci_front_adc=0, run_id=0;
-    outTree->Branch("coinc_"+nameMCP.at(Ch_1),&coinc_Ch1,"coinc_"+nameMCP.at(Ch_1)+"/F");
-    outTree->Branch("coinc_"+nameMCP.at(Ch_2),&coinc_Ch2,"coinc_"+nameMCP.at(Ch_2)+"/F");
-    outTree->Branch("coinc_"+nameMCP.at(Ch_3),&coinc_Ch3,"coinc_"+nameMCP.at(Ch_3)+"/F");
-    outTree->Branch("coinc_"+nameMCP.at(Ch_ref1),&coinc_ref1,"coinc_"+nameMCP.at(Ch_ref1)+"/F");
-    outTree->Branch("amp_max_"+nameMCP.at(Ch_1),&amp_max_Ch1,"amp_max_"+nameMCP.at(Ch_1)+"/F");
-    outTree->Branch("amp_max_"+nameMCP.at(Ch_2),&amp_max_Ch2,"amp_max_"+nameMCP.at(Ch_2)+"/F");
-    outTree->Branch("amp_max_"+nameMCP.at(Ch_3),&amp_max_Ch3,"amp_max_"+nameMCP.at(Ch_3)+"/F");
-    outTree->Branch("amp_max_"+nameMCP.at(Ch_ref1),&amp_max_ref1,"amp_max_"+nameMCP.at(Ch_ref1)+"/F");
-    outTree->Branch("charge_"+nameMCP.at(Ch_1),&charge_Ch1,"charge_"+nameMCP.at(Ch_1)+"/F");
-    outTree->Branch("charge_"+nameMCP.at(Ch_2),&charge_Ch2,"charge_"+nameMCP.at(Ch_2)+"/F");
-    outTree->Branch("charge_"+nameMCP.at(Ch_3),&charge_Ch3,"charge_"+nameMCP.at(Ch_3)+"/F");
-    outTree->Branch("charge_"+nameMCP.at(Ch_ref1),&charge_ref1,"charge_"+nameMCP.at(Ch_ref1)+"/F");
-    outTree->Branch("baseline_"+nameMCP.at(Ch_1),&baseline_Ch1,"baseline_"+nameMCP.at(Ch_1)+"/F");
-    outTree->Branch("baseline_"+nameMCP.at(Ch_2),&baseline_Ch2,"baseline_"+nameMCP.at(Ch_2)+"/F");
-    outTree->Branch("baseline_"+nameMCP.at(Ch_3),&baseline_Ch3,"baseline_"+nameMCP.at(Ch_3)+"/F");
-    outTree->Branch("baseline_"+nameMCP.at(Ch_ref1),&baseline_ref1,"baseline_"+nameMCP.at(Ch_ref1)+"/F");
-    outTree->Branch("sci_front_adc",&sci_front_adc,"sci_front_adc/I");
-    outTree->Branch("run_id",&run_id,"run_id/I");
+    SetOutTree(outTree, &nameMCP, Ch_1, Ch_2, Ch_3, Ch_ref1, Ch_ref2);
     //---open output files    
     std::ofstream data1(("analized_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").Data());
     std::ofstream data2(("analized_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").Data());
@@ -174,7 +153,7 @@ int main (int argc, char** argv)
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
         }
         log >> HV1 >> HV2 >> HV3;
-        //if(iRun != 68) continue; //analyze only one run
+        //if(iRun > 97) continue; //analyze only one run
         //-----Data loop-------------------------------------------------------- 
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
@@ -233,72 +212,119 @@ int main (int argc, char** argv)
                 if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig == 1) 
                 {
                     //---reset
-                    coinc_Ch1 = -100;
-                    coinc_Ch2 = -100;
-                    coinc_Ch3 = -100;
+                    time_Ch1 = -100;
+                    time_Ch2 = -100;
+                    time_Ch3 = -100;
                     //---trigger count
-		            tot_tr1++;
+		            tot_tr1++;                                    
+                    //---ref1 MCP
+                    time_ref1 = timeCF[Ch_ref1];
+                    amp_max_ref1 = ampMax[Ch_ref1];
+                    charge_ref1 = intSignal[Ch_ref1];
+                    baseline_ref1 = intBase[Ch_ref1];
+                    //---pulse fit variables ref1
+                    for(int iSample=0; iSample<digiCh[Ch_ref1].size(); iSample++)
+                        digiChHistos[Ch_ref1]->SetBinContent(digiChHistos[Ch_ref1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
+                                                             digiCh[Ch_ref1].at(iSample));
+                    TF1* fitFunc_ref1 = GetFitFunc("ref1", waves[Ch_ref1], 13, -24, ampMax[Ch_ref1], baseline[Ch_ref1]);
+                    digiChHistos[Ch_ref1]->Fit(fitFunc_ref1,"RQ");
+                    f_time_ref1 = fitFunc_ref1->GetParameter(1)*(MS_cf[Ch_ref1]-fitFunc_ref1->GetParameter(2));
+                    f_amp_max_ref1 = fitFunc_ref1->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                    f_charge_ref1 = fitFunc_ref1->Integral(fitFunc_ref1->GetParameter(1)*
+                                                           (MS_t1[Ch_ref1]-fitFunc_ref1->GetParameter(2)),
+                                                           fitFunc_ref1->GetParameter(1)*
+                                                           (MS_t2[Ch_ref1]-fitFunc_ref1->GetParameter(2)));
+                    f_chi2_ref1 = fitFunc_ref1->GetChisquare()/fitFunc_ref1->GetNDF();
                     //---Ch_1
                     if(intSignal[Ch_1] < Ch_th[Ch_1]) 
                     {
                         count[1]=count[1]+1;
-                        coinc_Ch1 = timeCF[Ch_ref1] - timeCF[Ch_1];
+                        time_Ch1 = timeCF[Ch_ref1] - timeCF[Ch_1];
+                        charge_Ch1 = intSignal[Ch_1];
+                        //---pulse fit variables Ch1
                         for(int iSample=0; iSample<digiCh[Ch_1].size(); iSample++)
                             digiChHistos[Ch_1]->SetBinContent(digiChHistos[Ch_1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
-                                                              -digiCh[Ch_1].at(iSample));
-                        //TF1* fitFunc = new TF1("fitfunc", waves[Ch_1], MS_LOW_TIME+14, MS_HIGH_TIME-20, 4, "histoFunc");
+                                                              digiCh[Ch_1].at(iSample));
+                        TF1* fitFunc_Ch1 = GetFitFunc("Ch1", waves[Ch_1], 13, -24, ampMax[Ch_1], baseline[Ch_1]);
+                        digiChHistos[Ch_1]->Fit(fitFunc_Ch1,"RQ");
+                        f_time_Ch1 = fitFunc_Ch1->GetParameter(1)*(MS_cf[Ch_1]-fitFunc_Ch1->GetParameter(2)) - f_time_ref1;
+                        f_amp_max_Ch1 = fitFunc_Ch1->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                        f_charge_Ch1 = fitFunc_Ch1->Integral(fitFunc_Ch1->GetParameter(1)*
+                                                             (MS_t1[Ch_1]-fitFunc_Ch1->GetParameter(2)),
+                                                             fitFunc_Ch1->GetParameter(1)*
+                                                             (MS_t2[Ch_1]-fitFunc_Ch1->GetParameter(2)));
+                        f_chi2_Ch1 = fitFunc_Ch1->GetChisquare()/fitFunc_Ch1->GetNDF();
                     }   
                     if(intBase[Ch_1] < Ch_th[Ch_1]) 
                         spare[1]=spare[1]+1;
                     amp_max_Ch1 = ampMax[Ch_1];
-                    charge_Ch1 = intSignal[Ch_1];
                     baseline_Ch1 = intBase[Ch_1];
-
                     //---Ch_2
                     if(intSignal[Ch_2] < Ch_th[Ch_2])
                     {
                         count[2]=count[2]+1;
-                        coinc_Ch2 = timeCF[Ch_ref1] - timeCF[Ch_2];
+                        time_Ch2 = timeCF[Ch_ref1] - timeCF[Ch_2];
+                        charge_Ch2 = intSignal[Ch_2];
+                        //---pulse fit variables Ch2
                         for(int iSample=0; iSample<digiCh[Ch_2].size(); iSample++)
-                            digiChHistos[Ch_2]->SetBinContent(digiChHistos[Ch_2]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
-                                                              -digiCh[Ch_2].at(iSample));
-//                        TF1* fitFunc = new TF1("fitfunc", waves[Ch_ref1], MS_LOW_TIME+11, MS_HIGH_TIME-20, 4, "histoFunc");
+                           digiChHistos[Ch_2]->SetBinContent(digiChHistos[Ch_2]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
+                                                             digiCh[Ch_2].at(iSample));
+                        TF1* fitFunc_Ch2 = GetFitFunc("Ch2", waves[Ch_2], 13, -24, ampMax[Ch_2], baseline[Ch_2]);
+                        digiChHistos[Ch_2]->Fit(fitFunc_Ch2,"RQ");
+                        f_time_Ch2 = fitFunc_Ch2->GetParameter(1)*(MS_cf[Ch_2]-fitFunc_Ch2->GetParameter(2)) - f_time_ref1;
+                        f_amp_max_Ch2 = fitFunc_Ch2->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                        f_charge_Ch2 = fitFunc_Ch2->Integral(fitFunc_Ch2->GetParameter(1)*
+                                                             (MS_t1[Ch_2]-fitFunc_Ch2->GetParameter(2)),
+                                                             fitFunc_Ch2->GetParameter(1)*
+                                                             (MS_t2[Ch_2]-fitFunc_Ch2->GetParameter(2)));
+                        f_chi2_Ch2 = fitFunc_Ch2->GetChisquare()/fitFunc_Ch2->GetNDF();
                     }
                     if(intBase[Ch_2] < Ch_th[Ch_2]) 
                         spare[2]=spare[2]+1;
                     amp_max_Ch2 = ampMax[Ch_2];
-                    charge_Ch2 = intSignal[Ch_2];
                     baseline_Ch2 = intBase[Ch_2];
-
                     //---Ch_3
                     if(intSignal[Ch_3] < Ch_th[Ch_3])
                     {
                         count[3]=count[3]+1;
-                        coinc_Ch3 = timeCF[Ch_ref1] - timeCF[Ch_3];
+                        time_Ch3 = timeCF[Ch_ref1] - timeCF[Ch_3];
+                        charge_Ch3 = intSignal[Ch_3];
+                        //---pulse fit variables Ch3
                         for(int iSample=0; iSample<digiCh[Ch_2].size(); iSample++)
-                            digiChHistos[Ch_3]->SetBinContent(digiChHistos[Ch_3]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
-                                                              -digiCh[Ch_3].at(iSample));
+                                digiChHistos[Ch_3]->SetBinContent(digiChHistos[Ch_3]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
+                                                                  digiCh[Ch_3].at(iSample));
+                        TF1* fitFunc_Ch3 = GetFitFunc("Ch3", waves[Ch_3], 12, -24.5, ampMax[Ch_3], baseline[Ch_3]);
+                        digiChHistos[Ch_3]->Fit(fitFunc_Ch3,"RQ");
+                        f_time_Ch3 = fitFunc_Ch3->GetParameter(1)*(MS_cf[Ch_3]-fitFunc_Ch3->GetParameter(2)) - f_time_ref1;
+                        f_amp_max_Ch3 = fitFunc_Ch3->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                        f_charge_Ch3 = fitFunc_Ch3->Integral(fitFunc_Ch3->GetParameter(1)*
+                                                             (MS_t1[Ch_3]-fitFunc_Ch3->GetParameter(2)),
+                                                             fitFunc_Ch3->GetParameter(1)*
+                                                             (MS_t2[Ch_3]-fitFunc_Ch3->GetParameter(2)));
+                        f_chi2_Ch3 = fitFunc_Ch3->GetChisquare()/fitFunc_Ch3->GetNDF();
                     }
                     if(intBase[Ch_3] < Ch_th[Ch_3]) 
                         spare[3]=spare[3]+1;
                     amp_max_Ch3 = ampMax[Ch_3];
-                    charge_Ch3 = intSignal[Ch_3];
-                    baseline_Ch3 = intBase[Ch_3];    
-
-                    //---ref MCP
-                        for(int iSample=0; iSample<digiCh[Ch_ref1].size(); iSample++)
-                            digiChHistos[Ch_ref1]->SetBinContent(digiChHistos[Ch_ref1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
-                                                              -digiCh[Ch_ref1].at(iSample));
-                    TF1* fitFunc = new TF1("fitfunc", waves[Ch_ref1], MS_LOW_TIME+12, MS_HIGH_TIME-24, 4, "histoFunc");
-                        fitFunc->SetParameters(ampMax[Ch_ref1],1.1,0.1,baseline[Ch_ref1]);
-                        fitFunc->SetNpx(10000);
-                        digiChHistos[Ch_ref1]->Fit(fitFunc,"R");
-                        digiChHistos[Ch_ref1]->Draw();
-                        app->Run();
-                    coinc_ref1 = timeCF[Ch_ref1] - timeCF[Ch_ref2];
-                    amp_max_ref1 = ampMax[Ch_ref1];
-                    charge_ref1 = intSignal[Ch_ref1];
-                    baseline_ref1 = intBase[Ch_ref1];
+                    baseline_Ch3 = intBase[Ch_3];
+                    //---ref2 MCP
+                    time_ref2 = timeCF[Ch_ref2] -timeCF[Ch_ref1];
+                    amp_max_ref2 = ampMax[Ch_ref2];
+                    charge_ref2 = intSignal[Ch_ref2];
+                    baseline_ref2 = intBase[Ch_ref2];
+                    //---pulse fit variables ref2
+                    for(int iSample=0; iSample<digiCh[Ch_ref2].size(); iSample++)
+                        digiChHistos[Ch_ref2]->SetBinContent(digiChHistos[Ch_ref2]->FindBin(iSample*0.2-timeCF[Ch_ref2]),
+                                                             digiCh[Ch_ref2].at(iSample));
+                    TF1* fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -24, ampMax[Ch_ref2], baseline[Ch_ref2]);
+                    digiChHistos[Ch_ref2]->Fit(fitFunc_ref2,"RQ");
+                    f_time_ref2 = fitFunc_ref2->GetParameter(1)*(MS_cf[Ch_ref2]-fitFunc_ref2->GetParameter(2)) - f_time_ref1;
+                    f_amp_max_ref2 = fitFunc_ref2->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                    f_charge_ref2 = fitFunc_ref2->Integral(fitFunc_ref2->GetParameter(1)*
+                                                           (MS_t1[Ch_ref2]-fitFunc_ref2->GetParameter(2)),
+                                                           fitFunc_ref2->GetParameter(1)*
+                                                           (MS_t2[Ch_ref2]-fitFunc_ref2->GetParameter(2)));
+                    f_chi2_ref2 = fitFunc_ref2->GetChisquare()/fitFunc_ref2->GetNDF();
             	    //---Fill output tree
             	    run_id = iRun;
 	                outTree->Fill();    

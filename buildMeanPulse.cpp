@@ -14,6 +14,8 @@
 #include "TProfile.h"
 #include "TMath.h"
 #include "TString.h"
+#include "TApplication.h"
+#include "TArrayF.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -95,7 +97,7 @@ int main (int argc, char** argv)
     //---Mean Pulses shape (time & value of each sample)
     vector<float> MS_sampleValue[9], MS_sampleTime[9];
     //---Coincidence tree
-    TFile* out = TFile::Open("meanPulses.root","recreate");
+    TFile* out = TFile::Open("meanPulses_Ch"+TString(argv[2])+".root","recreate");
     out->cd();
     TTree* outTree = new TTree("MeanPulsesTree", "MeanPulsesTree");
     outTree->SetDirectory(0);
@@ -192,7 +194,7 @@ int main (int argc, char** argv)
                     for(int iSample=0; iSample<1024; iSample++)
                     {
                         tot_tr1++;
-                        if(intSignal[Ch_1] < Ch_th[Ch_1]*2) 
+                        if(intSignal[Ch_1] < Ch_th[Ch_1]*4) 
                         {
                             MS_Ch_samples[Ch_1] = digiCh[Ch_1].at(iSample)/ampMax[Ch_1];
                             MS_Ch_times[Ch_1] = iSample*0.2 - timeCF[Ch_ref1];
@@ -202,7 +204,7 @@ int main (int argc, char** argv)
                             MS_Ch_samples[Ch_1] = 0;
                             MS_Ch_times[Ch_1] = -1000;
                         }
-                        if(intSignal[Ch_2] < Ch_th[Ch_2]*2)
+                        if(intSignal[Ch_2] < Ch_th[Ch_2]*4)
                         {
                             MS_Ch_samples[Ch_2] = digiCh[Ch_2].at(iSample)/ampMax[Ch_2];
                             MS_Ch_times[Ch_2] = iSample*0.2 - timeCF[Ch_ref1];
@@ -212,7 +214,7 @@ int main (int argc, char** argv)
                             MS_Ch_samples[Ch_2] = 0;
                             MS_Ch_times[Ch_2] = -1000;
                         }
-                        if(intSignal[Ch_3] < Ch_th[Ch_3]*2)
+                        if(intSignal[Ch_3] < Ch_th[Ch_3]*4)
                         {
                             MS_Ch_samples[Ch_3] = digiCh[Ch_3].at(iSample)/ampMax[Ch_3];
                             MS_Ch_times[Ch_3] = iSample*0.2 - timeCF[Ch_ref1];
@@ -240,26 +242,37 @@ int main (int argc, char** argv)
     //--------Save Waves------------------------------------------------------------
     int Nbins = (MS_HIGH_TIME - MS_LOW_TIME) / MS_SAMPLING_UNIT;
     //---Get Mean Pulse
-    TFile* in = TFile::Open("meanPulses.root","r");
+    TFile* in = TFile::Open("meanPulses_Ch"+TString(argv[2])+".root","r");
     TTree* inTree = (TTree*)in->Get("MeanPulsesTree");
     //---function tree
-    char out_name[50];
-    sprintf(out_name, "Scan%d_MS_func.root", atoi(argv[2]));
+    TString out_name = TString(tokens_name.at(0)+"_MS_func.root");
     TFile* outWave = TFile::Open(out_name,"recreate");
     outWave->cd();
     TH1F* histosMS[6];
+    TH1F* MS_cf_times = new TH1F("MS_cf_times","MS_cf_times",6,0,6);
+    TH1F* MS_t1_times = new TH1F("MS_t1_times","MS_t1_times",6,0,6);
+    TH1F* MS_t2_times = new TH1F("MS_t2_times","MS_t2_times",6,0,6);
     for(int iCh=0; iCh<6; iCh++)
     {
         char histoMS_name[20];
         sprintf(histoMS_name, "MS_fitfunc_Ch%d", iCh);
         TProfile* pr = new TProfile(histoMS_name, histoMS_name, Nbins, MS_LOW_TIME, MS_HIGH_TIME); 
         char draw_string[100], cuts[100];
-        sprintf(draw_string, "MS_Ch%d_samples:MS_Ch%d_times>>MS_fitfunc_Ch%d", iCh, iCh, iCh);
+        sprintf(draw_string, "-MS_Ch%d_samples:MS_Ch%d_times>>MS_fitfunc_Ch%d", iCh, iCh, iCh);
         sprintf(cuts, "MS_Ch%d_times > %d || MS_Ch%d_times < %d", iCh, (int)MS_LOW_TIME, iCh, (int)MS_HIGH_TIME);
         inTree->Draw(draw_string, cuts);
         histosMS[iCh] = (TH1F*)pr;
         histosMS[iCh]->Write();
+        histoFunc* tmp = new histoFunc(histosMS[iCh]);
+        TF1* f_tmp = new TF1("f"+TString(iCh), tmp, -15, 30, 4, "histoFunc");
+        f_tmp->SetParameters(1,1,0,0);
+        MS_cf_times->SetBinContent(iCh+1, f_tmp->GetX(-0.5, -15, f_tmp->GetMinimumX()));
+        MS_t1_times->SetBinContent(iCh+1, f_tmp->GetX(-0.1, -15, f_tmp->GetMinimumX()));
+        MS_t2_times->SetBinContent(iCh+1, f_tmp->GetX(-0.1, f_tmp->GetMinimumX(), f_tmp->GetMinimumX()+3));
     }
+    MS_cf_times->Write();
+    MS_t1_times->Write();
+    MS_t2_times->Write();
     outWave->Close();
 }
 
