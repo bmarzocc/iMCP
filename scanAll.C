@@ -88,8 +88,8 @@ void scanAll(TString dataFolder, TString dataType) {
     xh=3000.;
     xtit = "Bias voltage (V)"; 
   }
-  if (dataType=="ScanCu") {
-    xl=0.;
+  if (dataType=="Cu" || dataType == "Pb") {
+    xl=-1.;
     xh=15;
     xtit = "Absorber Thickness (X_{0})"; 
   }

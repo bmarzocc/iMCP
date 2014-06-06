@@ -387,8 +387,8 @@ TF1* GetFitFunc(TString Ch_n, histoFunc* wave, float t1_shift, float t2_shift,
     Ch_n = "fitFunc_"+Ch_n;
     TF1* fitFunc = new TF1(Ch_n, wave, MS_LOW_TIME+t1_shift, MS_HIGH_TIME+t2_shift, 4, "histoFunc");
     fitFunc->SetParameters(-amp_max, 1.1, 0.1, -baseline);
-    fitFunc->SetParLimits(1, 0.95, 1.5);
-    fitFunc->SetParLimits(0, -amp_max+200, -amp_max-200);
+    fitFunc->SetParLimits(1, 0.95, -1.5);
+    fitFunc->SetParLimits(0, -amp_max-100, -amp_max+200);
     fitFunc->SetNpx(100000);
     
     return fitFunc;

@@ -197,7 +197,7 @@ int main (int argc, char** argv)
                         if(intSignal[Ch_1] < Ch_th[Ch_1]*4) 
                         {
                             MS_Ch_samples[Ch_1] = digiCh[Ch_1].at(iSample)/ampMax[Ch_1];
-                            MS_Ch_times[Ch_1] = iSample*0.2 - timeCF[Ch_ref1];
+                            MS_Ch_times[Ch_1] = iSample*0.2 - timeCF[Ch_1];
                         }
                         else
                         {
@@ -207,7 +207,7 @@ int main (int argc, char** argv)
                         if(intSignal[Ch_2] < Ch_th[Ch_2]*4)
                         {
                             MS_Ch_samples[Ch_2] = digiCh[Ch_2].at(iSample)/ampMax[Ch_2];
-                            MS_Ch_times[Ch_2] = iSample*0.2 - timeCF[Ch_ref1];
+                            MS_Ch_times[Ch_2] = iSample*0.2 - timeCF[Ch_2];
                         }
                         else
                         {
@@ -217,7 +217,7 @@ int main (int argc, char** argv)
                         if(intSignal[Ch_3] < Ch_th[Ch_3]*4)
                         {
                             MS_Ch_samples[Ch_3] = digiCh[Ch_3].at(iSample)/ampMax[Ch_3];
-                            MS_Ch_times[Ch_3] = iSample*0.2 - timeCF[Ch_ref1];
+                            MS_Ch_times[Ch_3] = iSample*0.2 - timeCF[Ch_3];
                         }
                         else
                         {
