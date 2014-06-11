@@ -37,9 +37,9 @@
 #include "TClass.h"
 #include "TApplication.h"
 
-#include "analysis_tools.h"
-#include "InitTree_BTF.h"
-#include "histoFunc.h"
+#include "../include/analysis_tools.h"
+#include "../include/init_tree_BTF.h"
+#include "../include/histo_func.h"
 
 //*******MAIN*******************************************************************
 int main (int argc, char** argv)
@@ -97,46 +97,58 @@ int main (int argc, char** argv)
     int nFiles=1;
     bool do_fit=0;
     if(argc > 3)
-        do_fit = atoi(argv[3]);      
+        do_fit = atoi(argv[3]);
     //---Get MS pulses
-    TFile* inWave = TFile::Open((TString)tokens_name.at(0)+"_MS_func.root", "r");
+    TFile* inWave;
     TH1F* MS_histos[6];
     TH1F* digiChHistos[6];
     histoFunc* waves[6];
-    //---MS times: cf, t1->.1*ampmax (low), t2->.1*ampmax (high)
-    float MS_cf[6], MS_t1[6], MS_t2[6];
-    //---meaningfull waveforms times
-    TH1F* MS_cf_times = (TH1F*)inWave->Get("MS_cf_times");
-    TH1F* MS_t1_times = (TH1F*)inWave->Get("MS_t1_times");
-    TH1F* MS_t2_times = (TH1F*)inWave->Get("MS_t2_times");
-    for(int iCh=0; iCh<6; iCh++)
-    {
-        char tmp_name[20];
-        sprintf(tmp_name, "MS_fitfunc_Ch%d", iCh);
-        MS_histos[iCh] = (TH1F*)inWave->Get(tmp_name);
-        waves[iCh] = new histoFunc(MS_histos[iCh]);
-        sprintf(tmp_name, "histo_Ch%d", iCh);
-        digiChHistos[iCh] = new TH1F(tmp_name, tmp_name, 750, -50, 100);
-        MS_cf[iCh]=MS_cf_times->GetBinContent(iCh+1);
-        MS_t1[iCh]=MS_t1_times->GetBinContent(iCh+1);
-        MS_t2[iCh]=MS_t2_times->GetBinContent(iCh+1);
-    }
-    //---build fitFunc for the mcps channels
+    TH1F* MS_cf_times;
+    TH1F* MS_t1_times;
+    TH1F* MS_t2_times;
     TF1* fitFunc_Ch1 = GetFitFunc("Ch1", waves[Ch_1], 13, -25);
     TF1* fitFunc_Ch2 = GetFitFunc("Ch2", waves[Ch_2], 13, -25);
     TF1* fitFunc_Ch3 = GetFitFunc("Ch3", waves[Ch_3], 12, -25.5);
     TF1* fitFunc_ref1 = GetFitFunc("ref1", waves[Ch_ref1], 13, -25);
-    TF1* fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -25);     
+    TF1* fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -25);
+    //---MS times: cf, t1->.1*ampmax (low), t2->.1*ampmax (high)
+    float MS_cf[6], MS_t1[6], MS_t2[6];
+    if(do_fit == 1)
+    {
+    inWave = TFile::Open("tmp/"+(TString)tokens_name.at(0)+"_MS_func.root", "r");
+    //--usefull waveform times
+	MS_cf_times = (TH1F*)inWave->Get("MS_cf_times");
+	MS_t1_times = (TH1F*)inWave->Get("MS_t1_times");
+	MS_t2_times = (TH1F*)inWave->Get("MS_t2_times");
+	for(int iCh=0; iCh<6; iCh++)
+	{
+	    char tmp_name[20];
+	    sprintf(tmp_name, "MS_fitfunc_Ch%d", iCh);
+	    MS_histos[iCh] = (TH1F*)inWave->Get(tmp_name);
+	    waves[iCh] = new histoFunc(MS_histos[iCh]);
+	    sprintf(tmp_name, "histo_Ch%d", iCh);
+	    digiChHistos[iCh] = new TH1F(tmp_name, tmp_name, 750, -50, 100);
+	    MS_cf[iCh]=MS_cf_times->GetBinContent(iCh+1);
+	    MS_t1[iCh]=MS_t1_times->GetBinContent(iCh+1);
+	    MS_t2[iCh]=MS_t2_times->GetBinContent(iCh+1);
+	}
+	//---build fitFunc for the mcps channels
+	fitFunc_Ch1 = GetFitFunc("Ch1", waves[Ch_1], 13, -25);
+	fitFunc_Ch2 = GetFitFunc("Ch2", waves[Ch_2], 13, -25);
+	fitFunc_Ch3 = GetFitFunc("Ch3", waves[Ch_3], 12, -25.5);
+	fitFunc_ref1 = GetFitFunc("ref1", waves[Ch_ref1], 13, -25);
+	fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -25);
+    }
     //---output tree
-    TFile* outROOT = TFile::Open((TString)"outAnalysis_"+tokens_name.at(0)+".root","recreate");  
+    TFile* outROOT = TFile::Open("ntuples/"+(TString)"outAnalysis_"+tokens_name.at(0)+".root","recreate");  
     outROOT->cd();
     TTree* outTree = new TTree("analysis_tree", "analysis_tree");
     outTree->SetDirectory(0);
     SetOutTree(outTree, &nameMCP, Ch_1, Ch_2, Ch_3, Ch_ref1, Ch_ref2);
-    //---open output files    
+    //---open output files
     std::ofstream data1(("analyzed_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_1)+"_pc_"+pcMCP.at(Ch_1)+".dat").Data());
     std::ofstream data2(("analyzed_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_2)+"_pc_"+pcMCP.at(Ch_2)+".dat").Data());
-	std::ofstream data3(("analyzed_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_3)+"_pc_"+pcMCP.at(Ch_3)+".dat").Data());
+    std::ofstream data3(("analyzed_data/"+tokens_name.at(0)+"_"+nameMCP.at(Ch_3)+"_pc_"+pcMCP.at(Ch_3)+".dat").Data());
     //---do runs loop
     ifstream log (argv[1], ios::in);
     while(log >> nFiles)
@@ -157,13 +169,13 @@ int main (int argc, char** argv)
         {
             log >> iRun;
             char iRun_str[40];
-	        sprintf(iRun_str, "WaveForms_BTF/run_IMCP_%d_*.root", iRun);
+	        sprintf(iRun_str, "raw_data/run_IMCP_%d_*.root", iRun);
             chain->Add(iRun_str);
-            cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
+            cout << "Reading:  raw_data/run_IMCP_" << iRun << endl;
         }
         log >> HV1 >> HV2 >> HV3;
-        if(iRun != 259) continue; //analyze only one run
-        //-----Data loop-------------------------------------------------------- 
+        //if(iRun != 259) continue; //analyze only one run
+        //-----Data loop--------------------------------------------------------
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
             //-----Unpack data--------------------------------------------------
@@ -191,7 +203,7 @@ int main (int argc, char** argv)
                         if(sci_front_adc < 500) trig=0;
                     }
                 }
-                if(trig > 1) continue; 
+                //if(trig > 1) continue; 
                 //---Read digitizer samples
                 for(int iSample=0; iSample<nDigiSamples; iSample++)
                     if(digiChannel[iSample] == 3)
@@ -220,20 +232,21 @@ int main (int argc, char** argv)
                 }
                 //-----Analyze--------------------------------------------------
                 //---Multiplicity == 1 
-                if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig == 1) 
-                {
+                if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2]) 
+		{
                     //---reset
                     time_Ch1 = -100;
                     time_Ch2 = -100;
                     time_Ch3 = -100;
                     //---trigger count
-		            tot_tr1++;                                    
+		    if(trig == 1)
+			tot_tr1++;                                    
                     //-----ref1 MCP---------------------------------------------
                     time_ref1 = timeCF[Ch_ref1];
                     amp_max_ref1 = ampMax[Ch_ref1];
                     charge_ref1 = intSignal[Ch_ref1];
                     baseline_ref1 = intBase[Ch_ref1];
-                    if(do_fit == 1)
+		    if(do_fit == 1 && trig == 0)
                     {
                         //---pulse fit variables ref1
                         for(int iSample=0; iSample<digiCh[Ch_ref1].size(); iSample++)
@@ -249,12 +262,12 @@ int main (int argc, char** argv)
                                                                fitFunc_ref1->GetParameter(1)*
                                                                (MS_t2[Ch_ref1]-fitFunc_ref1->GetParameter(2)));
                         f_chi2_ref1 = fitFunc_ref1->GetChisquare()/fitFunc_ref1->GetNDF();
-                    }
+			cout << timeCF[Ch_ref1] << endl; 
+		    }
                     //-----Ch_1-------------------------------------------------
-                    if(intSignal[Ch_1] < Ch_th[Ch_1]) 
+                    if(intSignal[Ch_1] < Ch_th[Ch_1] && trig == 1) 
                     {
                         count[1]=count[1]+1;
-                        time_Ch1 = timeCF[Ch_ref1] - timeCF[Ch_1];
                         if(do_fit == 1)
                         {
                             //---pulse fit variables Ch1
@@ -273,16 +286,16 @@ int main (int argc, char** argv)
                             f_chi2_Ch1 = fitFunc_Ch1->GetChisquare()/fitFunc_Ch1->GetNDF();
                         }
                     }   
-                    if(intBase[Ch_1] < Ch_th[Ch_1]) 
+                    if(intBase[Ch_1] < Ch_th[Ch_1] && trig == 1) 
                         spare[1]=spare[1]+1;
+		    time_Ch1 = timeCF[Ch_ref1] - timeCF[Ch_1];
                     charge_Ch1 = intSignal[Ch_1];
                     amp_max_Ch1 = ampMax[Ch_1];
                     baseline_Ch1 = intBase[Ch_1];
                     //-----Ch_2-------------------------------------------------
-                    if(intSignal[Ch_2] < Ch_th[Ch_2])
+                    if(intSignal[Ch_2] < Ch_th[Ch_2] && trig == 1)
                     {
                         count[2]=count[2]+1;
-                        time_Ch2 = timeCF[Ch_ref1] - timeCF[Ch_2];
                         if(do_fit == 1)
                         {
                             //---pulse fit variables Ch2
@@ -301,16 +314,16 @@ int main (int argc, char** argv)
                             f_chi2_Ch2 = fitFunc_Ch2->GetChisquare()/fitFunc_Ch2->GetNDF();
                         }
                     }
-                    if(intBase[Ch_2] < Ch_th[Ch_2]) 
+                    if(intBase[Ch_2] < Ch_th[Ch_2] && trig == 1) 
                         spare[2]=spare[2]+1;
-                    charge_Ch2 = intSignal[Ch_2];
+		    time_Ch2 = timeCF[Ch_ref1] - timeCF[Ch_2];
+		    charge_Ch2 = intSignal[Ch_2];
                     amp_max_Ch2 = ampMax[Ch_2];
                     baseline_Ch2 = intBase[Ch_2];
                     //-----Ch_3-------------------------------------------------
-                    if(intSignal[Ch_3] < Ch_th[Ch_3])
+                    if(intSignal[Ch_3] < Ch_th[Ch_3] && trig == 1)
                     {
                         count[3]=count[3]+1;
-                        time_Ch3 = timeCF[Ch_ref1] - timeCF[Ch_3];
                         if(do_fit == 1)
                         {
                             //---pulse fit variables Ch3
@@ -329,8 +342,9 @@ int main (int argc, char** argv)
                             f_chi2_Ch3 = fitFunc_Ch3->GetChisquare()/fitFunc_Ch3->GetNDF();
                         }
                     }
-                    if(intBase[Ch_3] < Ch_th[Ch_3]) 
+		    if(intBase[Ch_3] < Ch_th[Ch_3] && trig == 1) 
                         spare[3]=spare[3]+1;
+		    time_Ch3 = timeCF[Ch_ref1] - timeCF[Ch_3];
                     charge_Ch3 = intSignal[Ch_3];
                     amp_max_Ch3 = ampMax[Ch_3];
                     baseline_Ch3 = intBase[Ch_3];
@@ -358,8 +372,8 @@ int main (int argc, char** argv)
                     }
             	    //-----Fill output tree-------------------------------------
             	    run_id = iRun;
-	                outTree->Fill();    
-                }
+		    outTree->Fill();    
+		}
                 //---Multiplicity == 0
                 if(intSignal[Ch_ref1] >= Ch_th[Ch_ref1] && intSignal[Ch_ref2] >= Ch_th[Ch_ref2] && trig==0) 
                 {
@@ -367,8 +381,8 @@ int main (int argc, char** argv)
                     if(intSignal[Ch_1] < Ch_th[Ch_1]) spare2[1]=spare2[1]+1; 
                     if(intSignal[Ch_2] < Ch_th[Ch_2]) spare2[2]=spare2[2]+1; 
                     if(intSignal[Ch_3] < Ch_th[Ch_3]) spare2[3]=spare2[3]+1;
-                }
-            }
+		}
+	    }
         }
         //-----Print Infos------------------------------------------------------
         std::cout << "--------------------------" << std::endl;
@@ -395,9 +409,11 @@ int main (int argc, char** argv)
         std::cout << "Ch_3 e_err:  " << TMath::Sqrt((eff3*(1-eff3))/tot_tr1) << std::endl;
         std::cout << "--------------------------" << std::endl;
         //---Fill output files
-	    data1 << HV1 << " " <<  eff1 << " " << 0 << " " << TMath::Sqrt((eff1*(1-eff1))/tot_tr1) << std::endl;
-	    data2 << HV2 << " " <<  eff2 << " " << 0 << " " << TMath::Sqrt((eff2*(1-eff2))/tot_tr1) << std::endl;
-	    data3 << HV3 << " " << eff3 << " " << 0 << " " << TMath::Sqrt((eff3*(1-eff3))/tot_tr1) << std::endl;
+	float adj_x0=1;
+	if(TString(tokens_name[0]).Contains("Cu")) adj_x0=0.64;
+	data1 << HV1*adj_x0 << " " <<  eff1 << " " << 0 << " " << TMath::Sqrt((eff1*(1-eff1))/tot_tr1) << std::endl;
+	data2 << HV2*adj_x0 << " " <<  eff2 << " " << 0 << " " << TMath::Sqrt((eff2*(1-eff2))/tot_tr1) << std::endl;
+	data3 << HV3*adj_x0 << " " << eff3 << " " << 0 << " " << TMath::Sqrt((eff3*(1-eff3))/tot_tr1) << std::endl;
         //---Get ready for next run
         chain->Delete();
     }
