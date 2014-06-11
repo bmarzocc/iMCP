@@ -102,11 +102,6 @@ int main (int argc, char** argv)
     TFile* inWave = TFile::Open((TString)tokens_name.at(0)+"_MS_func.root", "r");
     TH1F* MS_histos[6];
     TH1F* digiChHistos[6];
-    TF1* fitFunc_Ch1;
-    TF1* fitFunc_Ch2;
-    TF1* fitFunc_Ch3;
-    TF1* fitFunc_ref1;
-    TF1* fitFunc_ref2;
     histoFunc* waves[6];
     //---MS times: cf, t1->.1*ampmax (low), t2->.1*ampmax (high)
     float MS_cf[6], MS_t1[6], MS_t2[6];
@@ -125,7 +120,13 @@ int main (int argc, char** argv)
         MS_cf[iCh]=MS_cf_times->GetBinContent(iCh+1);
         MS_t1[iCh]=MS_t1_times->GetBinContent(iCh+1);
         MS_t2[iCh]=MS_t2_times->GetBinContent(iCh+1);
-    }    
+    }
+    //---build fitFunc for the mcps channels
+    TF1* fitFunc_Ch1 = GetFitFunc("Ch1", waves[Ch_1], 13, -25);
+    TF1* fitFunc_Ch2 = GetFitFunc("Ch2", waves[Ch_2], 13, -25);
+    TF1* fitFunc_Ch3 = GetFitFunc("Ch3", waves[Ch_3], 12, -25.5);
+    TF1* fitFunc_ref1 = GetFitFunc("ref1", waves[Ch_ref1], 13, -25);
+    TF1* fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -25);     
     //---output tree
     TFile* outROOT = TFile::Open((TString)"outAnalysis_"+tokens_name.at(0)+".root","recreate");  
     outROOT->cd();
@@ -161,10 +162,11 @@ int main (int argc, char** argv)
             cout << "Reading:  WaveForms_BTF/run_IMCP_" << iRun << endl;
         }
         log >> HV1 >> HV2 >> HV3;
-        if(iRun < 262) continue; //analyze only one run
+        if(iRun != 259) continue; //analyze only one run
         //-----Data loop-------------------------------------------------------- 
         for(int iEntry=0; iEntry<chain->GetEntries(); iEntry++)
         {
+            //-----Unpack data--------------------------------------------------
             //---always clear the std::vector !!!
             for(int iCh=0; iCh<9; iCh++)
             {
@@ -216,7 +218,8 @@ int main (int argc, char** argv)
                         intSignal[iCh] = ComputeIntegral(50, 70, &digiCh[iCh]);
                     }
                 }
-                //---Multiplicity == 1 --> compute efficency, fake rate and timing
+                //-----Analyze--------------------------------------------------
+                //---Multiplicity == 1 
                 if(intSignal[Ch_ref1] < Ch_th[Ch_ref1] && intSignal[Ch_ref2] < Ch_th[Ch_ref2] && trig == 1) 
                 {
                     //---reset
@@ -225,7 +228,7 @@ int main (int argc, char** argv)
                     time_Ch3 = -100;
                     //---trigger count
 		            tot_tr1++;                                    
-                    //---ref1 MCP
+                    //-----ref1 MCP---------------------------------------------
                     time_ref1 = timeCF[Ch_ref1];
                     amp_max_ref1 = ampMax[Ch_ref1];
                     charge_ref1 = intSignal[Ch_ref1];
@@ -236,17 +239,18 @@ int main (int argc, char** argv)
                         for(int iSample=0; iSample<digiCh[Ch_ref1].size(); iSample++)
                             digiChHistos[Ch_ref1]->SetBinContent(digiChHistos[Ch_ref1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
                                                                  digiCh[Ch_ref1].at(iSample));
-                        fitFunc_ref1 = GetFitFunc("ref1", waves[Ch_ref1], 13, -24, ampMax[Ch_ref1], baseline[Ch_ref1]);
+                        fitFunc_ref1->SetParameters(ampMax[Ch_ref1], 1., 0.1, baseline[Ch_ref1]);
+                        fitFunc_ref1->SetParLimits(0, -ampMax[Ch_ref1]-200, -ampMax[Ch_ref1]+100);
                         digiChHistos[Ch_ref1]->Fit(fitFunc_ref1,"RQ");
-                        f_time_ref1 = fitFunc_ref1->GetParameter(1)*(MS_cf[Ch_ref1]-fitFunc_ref1->GetParameter(2));
-                        f_amp_max_ref1 = fitFunc_ref1->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                        f_time_ref1 = MS_cf[Ch_ref1]-fitFunc_ref1->GetParameter(2);
+                        f_amp_max_ref1 = -fitFunc_ref1->GetParameter(0);
                         f_charge_ref1 = fitFunc_ref1->Integral(fitFunc_ref1->GetParameter(1)*
                                                                (MS_t1[Ch_ref1]-fitFunc_ref1->GetParameter(2)),
                                                                fitFunc_ref1->GetParameter(1)*
                                                                (MS_t2[Ch_ref1]-fitFunc_ref1->GetParameter(2)));
                         f_chi2_ref1 = fitFunc_ref1->GetChisquare()/fitFunc_ref1->GetNDF();
                     }
-                    //---Ch_1
+                    //-----Ch_1-------------------------------------------------
                     if(intSignal[Ch_1] < Ch_th[Ch_1]) 
                     {
                         count[1]=count[1]+1;
@@ -257,10 +261,11 @@ int main (int argc, char** argv)
                             for(int iSample=0; iSample<digiCh[Ch_1].size(); iSample++)
                                 digiChHistos[Ch_1]->SetBinContent(digiChHistos[Ch_1]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
                                                                   digiCh[Ch_1].at(iSample));
-                            fitFunc_Ch1 = GetFitFunc("Ch1", waves[Ch_1], 13, -24, ampMax[Ch_1], baseline[Ch_1]);
+                            fitFunc_Ch1->SetParameters(ampMax[Ch_1], 1., 0.1, baseline[Ch_1]);
+                            fitFunc_Ch1->SetParLimits(0, -ampMax[Ch_1]-200, -ampMax[Ch_1]+100);
                             digiChHistos[Ch_1]->Fit(fitFunc_Ch1,"RQ");
-                            f_time_Ch1 = fitFunc_Ch1->GetParameter(1)*(MS_cf[Ch_1]-fitFunc_Ch1->GetParameter(2)) - f_time_ref1;
-                            f_amp_max_Ch1 = fitFunc_Ch1->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                            f_time_Ch1 = (MS_cf[Ch_1]-fitFunc_Ch1->GetParameter(2)) - f_time_ref1;
+                            f_amp_max_Ch1 = -fitFunc_Ch1->GetParameter(0);
                             f_charge_Ch1 = fitFunc_Ch1->Integral(fitFunc_Ch1->GetParameter(1)*
                                                                  (MS_t1[Ch_1]-fitFunc_Ch1->GetParameter(2)),
                                                                  fitFunc_Ch1->GetParameter(1)*
@@ -273,7 +278,7 @@ int main (int argc, char** argv)
                     charge_Ch1 = intSignal[Ch_1];
                     amp_max_Ch1 = ampMax[Ch_1];
                     baseline_Ch1 = intBase[Ch_1];
-                    //---Ch_2
+                    //-----Ch_2-------------------------------------------------
                     if(intSignal[Ch_2] < Ch_th[Ch_2])
                     {
                         count[2]=count[2]+1;
@@ -284,10 +289,11 @@ int main (int argc, char** argv)
                             for(int iSample=0; iSample<digiCh[Ch_2].size(); iSample++)
                                digiChHistos[Ch_2]->SetBinContent(digiChHistos[Ch_2]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
                                                                  digiCh[Ch_2].at(iSample));
-                            fitFunc_Ch2 = GetFitFunc("Ch2", waves[Ch_2], 13, -24, ampMax[Ch_2], baseline[Ch_2]);
+                            fitFunc_Ch2->SetParameters(ampMax[Ch_2], 1., 0.1, baseline[Ch_2]);
+                            fitFunc_Ch2->SetParLimits(0, -ampMax[Ch_2]-200, -ampMax[Ch_2]+100);
                             digiChHistos[Ch_2]->Fit(fitFunc_Ch2,"RQ");
-                            f_time_Ch2 = fitFunc_Ch2->GetParameter(1)*(MS_cf[Ch_2]-fitFunc_Ch2->GetParameter(2)) - f_time_ref1;
-                            f_amp_max_Ch2 = fitFunc_Ch2->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                            f_time_Ch2 = (MS_cf[Ch_2]-fitFunc_Ch2->GetParameter(2)) - f_time_ref1;
+                            f_amp_max_Ch2 = -fitFunc_Ch2->GetParameter(0);
                             f_charge_Ch2 = fitFunc_Ch2->Integral(fitFunc_Ch2->GetParameter(1)*
                                                                  (MS_t1[Ch_2]-fitFunc_Ch2->GetParameter(2)),
                                                                  fitFunc_Ch2->GetParameter(1)*
@@ -300,7 +306,7 @@ int main (int argc, char** argv)
                     charge_Ch2 = intSignal[Ch_2];
                     amp_max_Ch2 = ampMax[Ch_2];
                     baseline_Ch2 = intBase[Ch_2];
-                    //---Ch_3
+                    //-----Ch_3-------------------------------------------------
                     if(intSignal[Ch_3] < Ch_th[Ch_3])
                     {
                         count[3]=count[3]+1;
@@ -311,10 +317,11 @@ int main (int argc, char** argv)
                             for(int iSample=0; iSample<digiCh[Ch_2].size(); iSample++)
                                     digiChHistos[Ch_3]->SetBinContent(digiChHistos[Ch_3]->FindBin(iSample*0.2-timeCF[Ch_ref1]),
                                                                       digiCh[Ch_3].at(iSample));
-                            fitFunc_Ch3 = GetFitFunc("Ch3", waves[Ch_3], 12, -24.5, ampMax[Ch_3], baseline[Ch_3]);
+                            fitFunc_Ch3->SetParameters(ampMax[Ch_3], 1., 0.1, baseline[Ch_3]);
+                            fitFunc_Ch3->SetParLimits(0, -ampMax[Ch_3]-200, -ampMax[Ch_3]+100);
                             digiChHistos[Ch_3]->Fit(fitFunc_Ch3,"RQ");
-                            f_time_Ch3 = fitFunc_Ch3->GetParameter(1)*(MS_cf[Ch_3]-fitFunc_Ch3->GetParameter(2)) - f_time_ref1;
-                            f_amp_max_Ch3 = fitFunc_Ch3->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                            f_time_Ch3 = (MS_cf[Ch_3]-fitFunc_Ch3->GetParameter(2)) - f_time_ref1;
+                            f_amp_max_Ch3 = -fitFunc_Ch3->GetParameter(0);
                             f_charge_Ch3 = fitFunc_Ch3->Integral(fitFunc_Ch3->GetParameter(1)*
                                                                  (MS_t1[Ch_3]-fitFunc_Ch3->GetParameter(2)),
                                                                  fitFunc_Ch3->GetParameter(1)*
@@ -327,7 +334,7 @@ int main (int argc, char** argv)
                     charge_Ch3 = intSignal[Ch_3];
                     amp_max_Ch3 = ampMax[Ch_3];
                     baseline_Ch3 = intBase[Ch_3];
-                    //---ref2 MCP
+                    //-----ref2 MCP---------------------------------------------
                     time_ref2 = timeCF[Ch_ref2] -timeCF[Ch_ref1];
                     amp_max_ref2 = ampMax[Ch_ref2];
                     charge_ref2 = intSignal[Ch_ref2];
@@ -338,21 +345,22 @@ int main (int argc, char** argv)
                         for(int iSample=0; iSample<digiCh[Ch_ref2].size(); iSample++)
                             digiChHistos[Ch_ref2]->SetBinContent(digiChHistos[Ch_ref2]->FindBin(iSample*0.2-timeCF[Ch_ref2]),
                                                                  digiCh[Ch_ref2].at(iSample));
-                        fitFunc_ref2 = GetFitFunc("ref2", waves[Ch_ref2], 13, -24, ampMax[Ch_ref2], baseline[Ch_ref2]);
+                        fitFunc_ref2->SetParameters(ampMax[Ch_ref2], 1., 0.1, baseline[Ch_ref2]);
+                        fitFunc_ref2->SetParLimits(0, -ampMax[Ch_ref2]-200, -ampMax[Ch_ref2]+100);
                         digiChHistos[Ch_ref2]->Fit(fitFunc_ref2,"RQ");
-                        f_time_ref2 = fitFunc_ref2->GetParameter(1)*(MS_cf[Ch_ref2]-fitFunc_ref2->GetParameter(2)) - f_time_ref1;
-                        f_amp_max_ref2 = fitFunc_ref2->GetMinimum(MS_LOW_TIME+12, MS_HIGH_TIME-24.5);
+                        f_time_ref2 = MS_cf[Ch_ref2]-fitFunc_ref2->GetParameter(2) - f_time_ref1;
+                        f_amp_max_ref2 = -fitFunc_ref2->GetParameter(0);
                         f_charge_ref2 = fitFunc_ref2->Integral(fitFunc_ref2->GetParameter(1)*
                                                                (MS_t1[Ch_ref2]-fitFunc_ref2->GetParameter(2)),
                                                                fitFunc_ref2->GetParameter(1)*
                                                                (MS_t2[Ch_ref2]-fitFunc_ref2->GetParameter(2)));
                         f_chi2_ref2 = fitFunc_ref2->GetChisquare()/fitFunc_ref2->GetNDF();
                     }
-            	    //---Fill output tree
+            	    //-----Fill output tree-------------------------------------
             	    run_id = iRun;
 	                outTree->Fill();    
                 }
-                //---Multiplicity == 0 --> compute fake rate
+                //---Multiplicity == 0
                 if(intSignal[Ch_ref1] >= Ch_th[Ch_ref1] && intSignal[Ch_ref2] >= Ch_th[Ch_ref2] && trig==0) 
                 {
                     tot_tr0++;
